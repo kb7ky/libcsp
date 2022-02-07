@@ -140,7 +140,7 @@ int main(int argc, char * argv[]) {
     }
 
 	csp_bridge_set_interfaces(bridge_iface[0], bridge_iface[1]);
-	csp_print("Interfaces\r\n");
+	csp_print("\n\nInterfaces\r\n");
     csp_iflist_print();
 
     /* Wait for execution to end (ctrl+c) */

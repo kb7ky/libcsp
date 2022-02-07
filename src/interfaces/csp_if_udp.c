@@ -114,7 +114,7 @@ void csp_if_udp_init(csp_iface_t * iface, csp_if_udp_conf_t * ifconf) {
 		csp_print("  Unknown peer address %s\n", ifconf->host);
 	}
 
-	csp_print("  UDP peer address: %s:%d (listening on port %d)\n", inet_ntoa(ifconf->peer_addr.sin_addr), ifconf->rport, ifconf->lport);
+	csp_print("UDP peer address: %s:%d (listening on port %d)\n", inet_ntoa(ifconf->peer_addr.sin_addr), ifconf->rport, ifconf->lport);
 
 	/* Start server thread */
 	ret = pthread_attr_init(&attributes);
