@@ -9,9 +9,9 @@
 #include <csp/interfaces/csp_if_zmqhub.h>
 #include <csp/interfaces/csp_if_udp.h>
 
-/* Hard coded UDP Ports - each interface will get a pair of incrementing ports */
+/* UDP Ports - each interface will get a pair of incrementing ports */
 #define UDP_PORT_BASE 6001
-int udp_ports = 6001;
+int udp_ports = 6001;  // default
 
 /* forward Decls */
 int bridge_start(void);
