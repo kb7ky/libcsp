@@ -30,7 +30,7 @@ int main(int argc, char * argv[]) {
 
     int opt;
 
-    while ((opt = getopt(argc, argv, "c:d:k:z:u:h")) != -1) {
+    while ((opt = getopt(argc, argv, "c:d:k:z:u:p:h")) != -1) {
         switch (opt) {
 			case 'd':
 				csp_dbg_packet_print++;
@@ -48,16 +48,20 @@ int main(int argc, char * argv[]) {
                 zmq_device = optarg;
                 break;
 #endif
-	    case 'u':
-		udp_device = optarg;
-		break;
+	    	case 'u':
+				udp_device = optarg;
+				break;
+			case 'p':
+				udp_ports = atoi(optarg);
+				break;
            default:
                 csp_print("Usage:\n"
                        " -d <debug-level> packet debug level\n"
                        " -c <can-device>  add CAN device\n"
                        " -k <kiss-device> add KISS device (serial)\n"
                        " -z <zmq-device>  add ZMQ device, e.g. \"localhost\"\n"
-		       " -u <udp-device>  add UDP device, e.g. \"localhost\"\n"
+		       		   " -u <udp-device>  add UDP device, e.g. \"localhost\"\n"
+					   " -p <udp-port-base> base port for UDP sender, Listener is +1\n"
 		);
                 exit(1);
                 break;
