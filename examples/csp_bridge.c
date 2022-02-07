@@ -90,7 +90,7 @@ int main(int argc, char * argv[]) {
             exit(1);
         }
 		bridge_iface_idx++;
-		if(bridge_iface_idx > 1) {
+		if(bridge_iface_idx > 2) {
 			csp_print("Too many bridge interfaces specified\n");
 			exit(2);
 		}
@@ -103,7 +103,7 @@ int main(int argc, char * argv[]) {
             exit(1);
         }
 		bridge_iface_idx++;
-		if(bridge_iface_idx > 1) {
+		if(bridge_iface_idx > 2) {
 			csp_print("Too many bridge interfaces specified\n");
 			exit(2);
 		}
@@ -117,7 +117,7 @@ int main(int argc, char * argv[]) {
             exit(1);
         }
  		bridge_iface_idx++;
-		if(bridge_iface_idx > 1) {
+		if(bridge_iface_idx > 2) {
 			csp_print("Too many bridge interfaces specified\n");
 			exit(2);
 		}
@@ -131,9 +131,9 @@ int main(int argc, char * argv[]) {
 		udp_ifconf.lport = UDP_LPORT;
 		udp_ifconf.rport = UDP_RPORT;
 		
-        	csp_if_udp_init(bridge_iface[bridge_iface_idx], &udp_ifconf);
+        csp_if_udp_init(bridge_iface[bridge_iface_idx], &udp_ifconf);
  		bridge_iface_idx++;
-		if(bridge_iface_idx > 1) {
+		if(bridge_iface_idx > 2) {
 			csp_print("Too many bridge interfaces specified\n");
 			exit(2);
 		}
