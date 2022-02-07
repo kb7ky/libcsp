@@ -64,7 +64,7 @@ int main(int argc, char * argv[]) {
         }
     }
 
-    csp_print("Initializing CSP Bridge");
+    csp_print("Initializing CSP Bridge\n");
 
     /* Init CSP */
     csp_init();
