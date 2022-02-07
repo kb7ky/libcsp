@@ -14,7 +14,7 @@
 #define UDP_RPORT 6007
 
 /* forward Decls */
-int router_start(void);
+int bridge_start(void);
 
 /* main - initialization of CSP and start of bridge tasks */
 int main(int argc, char * argv[]) {
@@ -26,7 +26,7 @@ int main(int argc, char * argv[]) {
 #if (CSP_HAVE_LIBZMQ)
     const char * zmq_device = NULL;
 #endif
-	const char * udp_device = NULL;
+    char * udp_device = NULL;
 
     int opt;
 
@@ -48,16 +48,17 @@ int main(int argc, char * argv[]) {
                 zmq_device = optarg;
                 break;
 #endif
-			case 'u':
-				udo_device = optarg;
-				break;
+	    case 'u':
+		udp_device = optarg;
+		break;
            default:
                 csp_print("Usage:\n"
                        " -d <debug-level> packet debug level\n"
                        " -c <can-device>  add CAN device\n"
                        " -k <kiss-device> add KISS device (serial)\n"
                        " -z <zmq-device>  add ZMQ device, e.g. \"localhost\"\n"
-					   " -u <udp-device>  add UDP device, e.g. \"localhost\"\n"
+		       " -u <udp-device>  add UDP device, e.g. \"localhost\"\n"
+		);
                 exit(1);
                 break;
         }
@@ -124,14 +125,13 @@ int main(int argc, char * argv[]) {
 #endif
     if (udp_device) {
 		csp_if_udp_conf_t udp_ifconf;
+		csp_iface_t udp_iface;
+		bridge_iface[bridge_iface_idx] = &udp_iface;
 		udp_ifconf.host = udp_device;
 		udp_ifconf.lport = UDP_LPORT;
 		udp_ifconf.rport = UDP_RPORT;
-        int error = csp_if_udp_init(&bridge_iface[bridge_iface_idx], &udp_ifconf);
-        if (error != CSP_ERR_NONE) {
-            csp_print("failed to add UDP interface [%s], error: %d\n", udp_device, error);
-            exit(1);
-        }
+		
+        	csp_if_udp_init(bridge_iface[bridge_iface_idx], &udp_ifconf);
  		bridge_iface_idx++;
 		if(bridge_iface_idx > 1) {
 			csp_print("Too many bridge interfaces specified\n");
@@ -139,8 +139,8 @@ int main(int argc, char * argv[]) {
 		}
     }
 
-	csp_bridge_set_interfaces(bridge_iface[0], bridge_iface[1])
-    csp_print("Interfaces\r\n");
+	csp_bridge_set_interfaces(bridge_iface[0], bridge_iface[1]);
+	csp_print("Interfaces\r\n");
 
     /* Wait for execution to end (ctrl+c) */
     while(1) {

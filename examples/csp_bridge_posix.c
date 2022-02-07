@@ -35,5 +35,5 @@ static void * task_bridge(void * param) {
 }
 
 int bridge_start(void) {
-	return csp_pthread_create(task_router);
+	return csp_pthread_create(task_bridge);
 }
