@@ -234,6 +234,11 @@ def build(ctx):
                         lib=ctx.env.LIBS,
                         use='csp')
 
+        if ctx.env.CSP_HAVE_LIBZMQ:
+            ctx.program(source='examples/csp_bridge.c',
+                        target='examples/csp_bridge',
+                        lib=ctx.env.LIBS,
+                        use='csp')
 
 def dist(ctx):
     ctx.excl = 'build/* **/.* **/*.pyc **/*.o **/*~ *.tar.gz'
