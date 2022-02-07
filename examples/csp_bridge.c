@@ -125,7 +125,7 @@ int main(int argc, char * argv[]) {
 #endif
     if (udp_device) {
 		csp_if_udp_conf_t udp_ifconf;
-		csp_iface_t udp_iface = { {0} };
+		csp_iface_t udp_iface = {0};
 		bridge_iface[bridge_iface_idx] = &udp_iface;
 		udp_ifconf.host = udp_device;
 		udp_ifconf.lport = udp_ports++;
