@@ -9,9 +9,9 @@
 #include <csp/interfaces/csp_if_zmqhub.h>
 #include <csp/interfaces/csp_if_udp.h>
 
-/* Hard coded UDP Ports for now */
-#define UDP_LPORT 6006
-#define UDP_RPORT 6007
+/* Hard coded UDP Ports - each interface will get a pair of incrementing ports */
+#define UDP_PORT_BASE 6001
+int udp_ports = 6001;
 
 /* forward Decls */
 int bridge_start(void);
@@ -125,11 +125,11 @@ int main(int argc, char * argv[]) {
 #endif
     if (udp_device) {
 		csp_if_udp_conf_t udp_ifconf;
-		csp_iface_t udp_iface;
+		csp_iface_t udp_iface = { {0} };
 		bridge_iface[bridge_iface_idx] = &udp_iface;
 		udp_ifconf.host = udp_device;
-		udp_ifconf.lport = UDP_LPORT;
-		udp_ifconf.rport = UDP_RPORT;
+		udp_ifconf.lport = udp_ports++;
+		udp_ifconf.rport = udp_ports++;
 		
         csp_if_udp_init(bridge_iface[bridge_iface_idx], &udp_ifconf);
  		bridge_iface_idx++;
