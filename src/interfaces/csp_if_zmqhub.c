@@ -177,7 +177,7 @@ int csp_zmqhub_init_w_name_endpoints_rxfilter(const char * ifname,
 	drv->context = zmq_ctx_new();
 	assert(drv->context != NULL);
 
-	//csp_print("INIT %s: pub(tx): [%s], sub(rx): [%s], rx filters: %u", drv->iface.name, publish_endpoint, subscribe_endpoint, rxfilter_count);
+	csp_print("ZMQ INIT %s: pub(tx): [%s], sub(rx): [%s], rx filters: %u", drv->iface.name, publish_endpoint, subscribe_endpoint, rxfilter_count);
 
 	/* Publisher (TX) */
 	drv->publisher = zmq_socket(drv->context, ZMQ_PUB);
