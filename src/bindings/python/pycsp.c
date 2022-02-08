@@ -73,10 +73,14 @@ static void pycsp_free_csp_conn(PyObject * obj) {
 }
 
 static void pycsp_free_csp_socket(PyObject * obj) {
-	csp_conn_t * socket = get_obj_as_socket(obj, true);
+#if 0
+	csp_socket_t * socket = get_obj_as_socket(obj, true);
+
+// see pycsp_csp_socket for details on the hack
 	if (socket) {
 		csp_close(socket);
 	}
+#endif
 	PyCapsule_SetPointer(obj, &CSP_POINTER_HAS_BEEN_FREED);
 }
 
@@ -123,13 +127,31 @@ static PyObject * pycsp_get_revision(PyObject * self, PyObject * args) {
 	return Py_BuildValue("s", csp_get_conf()->revision);
 }
 
+// for some reason, the libcsp does not expose csp_socket and even if it did
+// it is not functional. C code will allocate the socket external to the library
+// as in
+//    	csp_socket_t sock = {0};
+// so this is a static array of socket structures which will be allocated
+// also csp_free() is used to free csp_conn_t * so that is broke as well
+// NOTE: this hack allocates 10 sockets.... period - no reuse
+
+#define CSP_NUM_SOCKETS 10
+static csp_socket_t hack_sockets[CSP_NUM_SOCKETS];
+static int hack_socket_idx = 0;
+
 static PyObject * pycsp_socket(PyObject * self, PyObject * args) {
 	uint32_t opts = CSP_SO_NONE;
+	csp_socket_t * socket = NULL;
+
 	if (!PyArg_ParseTuple(args, "|I", &opts)) {
 		return NULL;  // TypeError is thrown
 	}
 
-	csp_socket_t * socket = csp_socket(opts);
+	// Allocate static socket structure
+	if(hack_socket_idx < CSP_NUM_SOCKETS) {
+		socket = &hack_sockets[hack_socket_idx];
+		hack_socket_idx++;
+	}
 	if (socket == NULL) {
 		return PyErr_Error("csp_socket() - no free sockets/connections", CSP_ERR_NOBUFS);
 	}
