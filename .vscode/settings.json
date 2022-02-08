@@ -1,7 +1,4 @@
 {
-	"mesonbuild.buildFolder": "builddir",
-	"files.associations": {
-		"*.h": "c",
-		"*.c": "c",
-	},
+    "python.pythonPath": "/usr/bin/python3",
+    "cmake.configureOnOpen": false
 }

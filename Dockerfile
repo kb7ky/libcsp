@@ -14,16 +14,7 @@ RUN git clone https://github.com/kb7ky/libcsp.git
 
 WORKDIR libcsp
 
-RUN python3 ./waf distclean configure build --with-os=posix --enable-rdp --enable-promisc --enable-crc32 --enable-hmac --enable-dedup --with-driver-usart=linux --enable-if-zmqhub --enable-examples
-
-FROM ubuntu:20.04 AS runner-image
-RUN apt-get update && apt-get install --no-install-recommends -y libczmq4 && \
-	apt-get clean && rm -rf /var/lib/apt/lists/*
-
-RUN useradd --create-home csp
-COPY --from=builder-image libcsp/build /home/csp/bin
-
-USER csp
+RUN python3 ./waf distclean configure build --with-os=posix --enable-rdp --enable-promisc --enable-crc32 --enable-hmac --enable-dedup --with-driver-usart=linux --enable-if-zmqhub --enable-examples --enable-python3-bindings
 
 EXPOSE 6000/tcp
 EXPOSE 7000/tcp
