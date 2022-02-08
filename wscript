@@ -19,8 +19,9 @@ def options(ctx):
     gr.add_option('--includes', default='', help='Add additional include paths, separate with comma')
     gr.add_option('--install-csp', action='store_true', help='Installs CSP headers and lib')
 
-    gr.add_option('--disable-output', action='store_true', help='Disable CSP output')
-    gr.add_option('--disable-print-stdio', action='store_true', help='Disable vprintf for csp_print_func')
+    gr.add_option('--enable-output', action='store_true', help='Enable CSP output')
+    gr.add_option('--enable-print-stdio', action='store_true', help='Enable vprintf for csp_print_func')
+    gr.add_option('--enable-print-file', action='store_true', help='Enable vprintf for csp_print_func to csp_output.log')
     gr.add_option('--disable-stlib', action='store_true', help='Build objects only')
     gr.add_option('--enable-shlib', action='store_true', help='Build shared library')
     gr.add_option('--enable-rdp', action='store_true', help='Enable RDP support')
@@ -170,8 +171,9 @@ def configure(ctx):
     ctx.define('CSP_RTABLE_SIZE', ctx.options.with_rtable_size)
 
     # Set defines for enabling features
-    ctx.define('CSP_ENABLE_CSP_PRINT', not ctx.options.disable_output)
-    ctx.define('CSP_PRINT_STDIO', not ctx.options.disable_print_stdio)
+    ctx.define('CSP_ENABLE_CSP_PRINT', ctx.options.enable_output)
+    ctx.define('CSP_PRINT_STDIO', ctx.options.enable_print_stdio)
+    ctx.define('CSP_PRINT_FILE', ctx.options.enable_print_file)
     ctx.define('CSP_USE_RDP', ctx.options.enable_rdp)
     ctx.define('CSP_USE_HMAC', ctx.options.enable_hmac)
     ctx.define('CSP_USE_PROMISC', ctx.options.enable_promisc)
