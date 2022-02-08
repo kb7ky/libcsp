@@ -7,7 +7,7 @@
 # $ ./build/zmqproxy
 #
 # Run server, default enabling ZMQ interface:
-# $ LD_LIBRARY_PATH=build PYTHONPATH=build python3 examples/python_bindings_example_server.py
+# $ LD_LIBRARY_PATH=build PYTHONPATH=build python3 examples/python_csp_socket_test.py
 #
 
 import os
@@ -27,3 +27,20 @@ if __name__ == "__main__":
     # See "include\csp\csp.h" - lines 42-80 for more detail
     # See "src\bindings\python\pycsp.c" - lines 128-156 for more detail
     libcsp.init(27, "test_sockets", "bindings", "1.2.3")
+
+    oldsock = None
+
+    for x in range(11):
+        print(x)
+        sock = libcsp.socket()
+
+        if(oldsock == sock):
+            print("using same socket")
+
+        if(sock == None):
+            print("Fail")
+        else:    
+            libcsp.bind(sock, x)
+
+        oldsock = sock
+
