@@ -8,6 +8,7 @@
 #include <csp/interfaces/csp_if_kiss.h>
 #include <csp/drivers/usart.h>
 #include <csp/drivers/can_socketcan.h>
+#include <csp/csp_yaml.h>
 #include <endian.h>
 
 #define SOCKET_CAPSULE     "csp_socket_t"
@@ -945,9 +946,28 @@ static PyObject * pycsp_print_routes(PyObject * self, PyObject * args) {
 	Py_RETURN_NONE;
 }
 
+static PyObject * pycsp_print_iflist(PyObject * self, PyObject * args) {
+	csp_iflist_print();
+	Py_RETURN_NONE;
+}
+
 static PyObject * pycsp_get_buffer_stats(PyObject * self, PyObject * args) {
 	return Py_BuildValue("iii", (int)csp_buffer_remaining(), (int)csp_buffer_size(), (int)csp_buffer_data_size());
 }
+
+#ifdef CSP_HAVE_YAML
+static PyObject * pycsp_yaml_init(PyObject * self, PyObject * args) {
+	uint32_t addr;
+	char * file;
+	if (!PyArg_ParseTuple(args, "sI", &file, &addr)) {
+		return NULL;  // TypeError is thrown
+	}
+
+	csp_yaml_init(file, &addr);
+
+	Py_RETURN_NONE;
+}
+#endif
 
 static PyMethodDef methods[] = {
 
@@ -1014,7 +1034,11 @@ static PyMethodDef methods[] = {
 	{"packet_set_data", pycsp_packet_set_data, METH_VARARGS, ""},
 	{"print_connections", pycsp_print_connections, METH_NOARGS, ""},
 	{"print_routes", pycsp_print_routes, METH_NOARGS, ""},
+	{"print_iflist", pycsp_print_iflist, METH_NOARGS, ""},
 	{"get_buffer_stats", pycsp_get_buffer_stats, METH_NOARGS, ""},
+#ifdef CSP_HAVE_YAML
+	{"yaml_init", pycsp_yaml_init, METH_VARARGS, ""},
+#endif
 
 	/* sentinel */
 	{NULL, NULL, 0, NULL}};

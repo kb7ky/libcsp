@@ -114,6 +114,7 @@ void csp_iflist_print(void) {
 	unsigned long tx, rx;
 	char tx_postfix, rx_postfix;
 
+	csp_print("\nInterfaces:\n");
 	while (i) {
 		tx = csp_bytesize(i->txbytes, &tx_postfix);
 		rx = csp_bytesize(i->rxbytes, &rx_postfix);

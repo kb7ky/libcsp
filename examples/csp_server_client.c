@@ -239,7 +239,7 @@ int main(int argc, char * argv[]) {
             exit(1);
         }
     } else if (default_iface) {
-	default_iface->addr = address;
+	    default_iface->addr = address;
         csp_rtable_set(0, 0, default_iface, CSP_NO_VIA_ADDRESS);
     } else {
         /* no interfaces configured - run server and client in process, using loopback interface */

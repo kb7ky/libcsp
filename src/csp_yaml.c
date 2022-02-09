@@ -65,7 +65,7 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 		}
 
 	}
-
+#if CSP_HAVE_IFTUN
 	else if (strcmp(data->driver, "tun") == 0) {
 
 		/* Check for valid options */
@@ -74,14 +74,14 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 			return;
 		}
 
-		iface = malloc(sizeof(csp_iface_t));
-		csp_if_tun_conf_t * ifconf = malloc(sizeof(csp_if_tun_conf_t));
+		iface = calloc(1,sizeof(csp_iface_t));
+		csp_if_tun_conf_t * ifconf = calloc(1,sizeof(csp_if_tun_conf_t));
 		ifconf->tun_dst = atoi(data->destination);
 		ifconf->tun_src = atoi(data->source);
 
 		csp_if_tun_init(iface, ifconf);
 	}
-
+#endif
 	else if (strcmp(data->driver, "udp") == 0) {
 
 		/* Check for valid options */
@@ -90,8 +90,8 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 			return;
 		}
 
-		iface = malloc(sizeof(csp_iface_t));
-		csp_if_udp_conf_t * udp_conf = malloc(sizeof(csp_if_udp_conf_t));
+		iface = calloc(1,sizeof(csp_iface_t));
+		csp_if_udp_conf_t * udp_conf = calloc(1,sizeof(csp_if_udp_conf_t));
 		udp_conf->host = data->server;
 		udp_conf->lport = atoi(data->listen_port);
 		udp_conf->rport = atoi(data->remote_port);

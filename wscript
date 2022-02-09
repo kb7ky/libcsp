@@ -39,11 +39,13 @@ def options(ctx):
     gr.add_option('--with-buffer-size', type=int, default=256, help='Set size of csp buffers')
     gr.add_option('--with-buffer-count', type=int, default=15, help='Set number of csp buffers')
     gr.add_option('--with-rtable-size', type=int, default=10, help='Set max number of entries in route table')
+    gr.add_option('--enable-yaml', action='store_true', help='Enable loading config via yaml file')
 
     # Drivers and interfaces (requires external dependencies)
     gr.add_option('--enable-if-zmqhub', action='store_true', help='Enable ZMQ interface')
     gr.add_option('--enable-can-socketcan', action='store_true', help='Enable Linux socketcan driver')
     gr.add_option('--with-driver-usart', default=None, metavar='DRIVER', help='Build USART driver. [linux, None]')
+    gr.add_option('--enable-if-tun', action='store_true', help='Enable TUN interface')
 
     # OS
     gr.add_option('--with-os', metavar='OS', default='posix', help='Set operating system. Must be one of: ' + str(valid_os))
@@ -131,6 +133,12 @@ def configure(ctx):
         ctx.define('CSP_HAVE_STDIO', True)
         ctx.env.append_unique('FILES_CSP', ['src/csp_rtable_stdio.c'])
 
+    # Add if yaml
+    if ctx.options.enable_yaml:
+        ctx.env.append_unique('FILES_CSP', ['src/csp_yaml.c'])
+        ctx.check_cfg(package='yaml-0.1', args='--cflags --libs', define_name='CSP_HAVE_YAML')
+        ctx.env.append_unique('LIBS', 'yaml')
+
     # Add if UDP
     if ctx.check(header_name="sys/socket.h", mandatory=False) and ctx.check(header_name="arpa/inet.h", mandatory=False):
         ctx.env.append_unique('FILES_CSP', ['src/interfaces/csp_if_udp.c'])
@@ -152,7 +160,12 @@ def configure(ctx):
         ctx.env.append_unique('LIBS', ctx.env.LIB_LIBZMQ)
         ctx.env.append_unique('FILES_CSP', 'src/interfaces/csp_if_zmqhub.c')
 
-    # Store configuration options
+    # Add if TUN
+    if ctx.options.enable_if_tun:
+        ctx.define('CSP_HAVE_IFTUN', True)
+        ctx.env.append_unique('FILES_CSP', ['src/interfaces/csp_if_tun.c'])
+
+   # Store configuration options
     ctx.env.ENABLE_EXAMPLES = ctx.options.enable_examples
 
     # Add Python bindings

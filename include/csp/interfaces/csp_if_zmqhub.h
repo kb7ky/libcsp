@@ -74,6 +74,7 @@ int csp_zmqhub_init_w_endpoints(uint16_t addr,
 
 /**
    Setup ZMQ interface.
+   @param[in] addr Source Address to be bound to the interface.
    @param[in] ifname Name of CSP interface, use NULL for default name #CSP_ZMQHUB_IF_NAME.
    @param[in] rx_filter Rx filters, use NULL for no filters - receive all messages.
    @param[in] rx_filter_count Number of Rx filters in \a rx_filter.
@@ -83,7 +84,8 @@ int csp_zmqhub_init_w_endpoints(uint16_t addr,
    @param[out] return_interface created CSP interface.
    @return #CSP_ERR_NONE on succcess - else assert.
 */
-int csp_zmqhub_init_w_name_endpoints_rxfilter(const char * ifname,
+int csp_zmqhub_init_w_name_endpoints_rxfilter(const uint16_t addr,
+                                              const char * ifname,
                                               const uint16_t rx_filter[], unsigned int rx_filter_count,
                                               const char * publish_endpoint,
                                               const char * subscribe_endpoint,

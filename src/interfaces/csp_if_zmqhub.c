@@ -144,7 +144,8 @@ int csp_zmqhub_init_w_endpoints(uint16_t addr,
 	uint16_t * rxfilter = NULL;
 	unsigned int rxfilter_count = 0;
 
-	return csp_zmqhub_init_w_name_endpoints_rxfilter(NULL,
+	return csp_zmqhub_init_w_name_endpoints_rxfilter(addr,
+													 NULL,
 													 rxfilter, rxfilter_count,
 													 publisher_endpoint,
 													 subscriber_endpoint,
@@ -152,7 +153,8 @@ int csp_zmqhub_init_w_endpoints(uint16_t addr,
 													 return_interface);
 }
 
-int csp_zmqhub_init_w_name_endpoints_rxfilter(const char * ifname,
+int csp_zmqhub_init_w_name_endpoints_rxfilter(const uint16_t addr,
+											  const char * ifname,
 											  const uint16_t rxfilter[], unsigned int rxfilter_count,
 											  const char * publish_endpoint,
 											  const char * subscribe_endpoint,
@@ -204,6 +206,9 @@ int csp_zmqhub_init_w_name_endpoints_rxfilter(const char * ifname,
 	assert(ret == 0);
 	ret = pthread_create(&drv->rx_thread, &attributes, csp_zmqhub_task, drv);
 	assert(ret == 0);
+
+	/* Source Address to bind to interface */
+	drv->iface.addr = addr;
 
 	/* Register interface */
 	csp_iflist_add(&drv->iface);

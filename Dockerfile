@@ -14,7 +14,7 @@ RUN git clone https://github.com/kb7ky/libcsp.git
 
 WORKDIR libcsp
 
-RUN python3 ./waf distclean configure build --with-os=posix --enable-rdp --enable-promisc --enable-crc32 --enable-hmac --enable-dedup --with-driver-usart=linux --enable-if-zmqhub --enable-examples --enable-python3-bindings --enable-can-socketcan --with-driver-usart=linux --enable-output --enable-print-file
+RUN python3 ./waf distclean configure build --with-os=posix --enable-rdp --enable-promisc --enable-crc32 --enable-hmac --enable-dedup --with-driver-usart=linux --enable-if-zmqhub --enable-examples --enable-python3-bindings --enable-can-socketcan --with-driver-usart=linux --enable-output --enable-print-file --enable yaml --enable-if-tun
 
 EXPOSE 6000/tcp
 EXPOSE 7000/tcp

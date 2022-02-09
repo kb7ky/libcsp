@@ -47,7 +47,10 @@ if __name__ == "__main__":
     libcsp.route_start_task()
     time.sleep(0.2)  # allow router task startup
     
-    libcsp.zmqhub_init(22, "localhost")        
-    libcsp.rtable_load("0/0 ZMQHUB")
+ #   libcsp.zmqhub_init(22, "localhost")
+    libcsp.yaml_init("testload.yaml", 77)      
+ #   libcsp.rtable_load("0/0 ZMQHUB")
+
     libcsp.print_routes()
+    libcsp.print_iflist()
 

@@ -118,6 +118,7 @@ static bool csp_rtable_print_route(void * ctx, csp_route_t * route) {
 }
 
 void csp_rtable_print(void) {
+	csp_print("\nRoute Table:\n");
 	csp_rtable_iterate(csp_rtable_print_route, NULL);
 }
 
