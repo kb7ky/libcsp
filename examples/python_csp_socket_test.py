@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     oldsock = None
 
-    for x in range(11):
+    for x in range(10):
         print(x)
         sock = libcsp.socket()
 
@@ -43,4 +43,11 @@ if __name__ == "__main__":
             libcsp.bind(sock, x)
 
         oldsock = sock
+
+    libcsp.route_start_task()
+    time.sleep(0.2)  # allow router task startup
+    
+    libcsp.zmqhub_init(22, "localhost")        
+    libcsp.rtable_load("0/0 ZMQHUB")
+    libcsp.print_routes()
 
