@@ -88,7 +88,7 @@ static void * task_capture(void * ctx) {
 int main(int argc, char ** argv) {
 
     int ret;
-	csp_conf.version = 2;
+	csp_conf.version = 1;
 
 	int opt;
 	while ((opt = getopt(argc, argv, "dhv:s:p:f:")) != -1) {

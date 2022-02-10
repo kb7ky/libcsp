@@ -10,7 +10,7 @@
 #include "csp_rdp_queue.h"
 
 csp_conf_t csp_conf = {
-	.version = 2,
+	.version = 1,
 	.address = 0,
 	.hostname = "",
 	.model = "",

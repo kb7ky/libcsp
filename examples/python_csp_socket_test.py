@@ -26,7 +26,7 @@ if __name__ == "__main__":
         # "1.2.3"         - Revision, returned by CSP identity requests
     # See "include\csp\csp.h" - lines 42-80 for more detail
     # See "src\bindings\python\pycsp.c" - lines 128-156 for more detail
-    libcsp.init(27, "test_sockets", "bindings", "1.2.3")
+    libcsp.init(16, "test_sockets", "bindings", "1.2.3")
 
     oldsock = None
 
@@ -48,9 +48,14 @@ if __name__ == "__main__":
     time.sleep(0.2)  # allow router task startup
     
  #   libcsp.zmqhub_init(22, "localhost")
-    libcsp.yaml_init("testload.yaml", 77)      
+    libcsp.yaml_init("testload.yaml", 16)      
  #   libcsp.rtable_load("0/0 ZMQHUB")
+    print(libcsp.get_hostname())
+    print(libcsp.get_model())
+    print(libcsp.get_revision())
 
+    libcsp.ping(17)
+    
     libcsp.print_routes()
     libcsp.print_iflist()
 

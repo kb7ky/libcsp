@@ -22,9 +22,9 @@
 #
 - name: "ZMQ0"
   driver: "zmq"
-  server: "localhost"
+  server: "192.168.64.1"
   addr: 16
-  netmask: 8
+  netmask: 2
   default: true
 
 # - name: "KISS"
@@ -39,21 +39,21 @@
   driver: "tun"
   source: 300
   destination: 400
-  addr: 300
-  netmask: 8
+  addr: 24
+  netmask: 2
 
 - name: "UDP0"
   driver: "udp"
-  addr: 500
-  netmask: 8
+  addr: 8
+  netmask: 2
   server: "127.0.0.1"
   listen_port: 9600
   remote_port: 9700
 
 - name: "UDP1"
   driver: "udp"
-  addr: 501
-  netmask: 8
+  addr: 24
+  netmask: 2
   server: "127.0.0.1"
   listen_port: 9601
   remote_port: 9701
