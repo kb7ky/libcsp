@@ -201,8 +201,10 @@ void csp_yaml_init(char * filename, unsigned int * dfl_addr) {
 
 	csp_print("  Reading config from %s\n", filename);
 	FILE * file = fopen(filename, "rb");
-	if (file == NULL)
+	if (file == NULL) {
+		csp_print("Failed to open config file\n");
 		return;
+	}
 
 	yaml_parser_t parser;
 	yaml_parser_initialize(&parser);

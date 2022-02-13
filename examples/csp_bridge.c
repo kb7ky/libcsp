@@ -2,16 +2,22 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <csp/csp.h>
-#include <csp/drivers/usart.h>
-#include <csp/drivers/can_socketcan.h>
-#include <csp/interfaces/csp_if_zmqhub.h>
-#include <csp/interfaces/csp_if_udp.h>
+#include <csp/csp_yaml.h>
+#include <csp/csp_iflist.h>
+#include <csp/interfaces/csp_if_lo.h>
 
-/* UDP Ports - each interface will get a pair of incrementing ports */
-#define UDP_PORT_BASE 6001
-int udp_ports = 6001;  // default
+// used to plug in config
+extern csp_conf_t csp_conf;
+
+// buffers for strings
+#define CSP_MAX_STRING 48
+char hostname[CSP_MAX_STRING];
+char model[CSP_MAX_STRING];
+char revision[CSP_MAX_STRING];
+char yamlfn[CSP_MAX_STRING + 10];
 
 /* forward Decls */
 int bridge_start(void);
@@ -19,128 +25,75 @@ int bridge_start(void);
 /* main - initialization of CSP and start of bridge tasks */
 int main(int argc, char * argv[]) {
 
-#if (CSP_HAVE_LIBSOCKETCAN)
-    const char * can_device = NULL;
-#endif
-    const char * kiss_device = NULL;
-#if (CSP_HAVE_LIBZMQ)
-    const char * zmq_device = NULL;
-#endif
-    char * udp_device = NULL;
-
     int opt;
 
-    while ((opt = getopt(argc, argv, "c:d:k:z:u:p:h")) != -1) {
+    while ((opt = getopt(argc, argv, "h:d:m:r:v:")) != -1) {
         switch (opt) {
 			case 'd':
 				csp_dbg_packet_print++;
 				break;
-#if (CSP_HAVE_LIBSOCKETCAN)
-            case 'c':
-                can_device = optarg;
+            case 'h':
+                strncpy(hostname, optarg, CSP_MAX_STRING);
+                csp_conf.hostname = hostname;
                 break;
-#endif
-            case 'k':
-                kiss_device = optarg;
+            case 'm':
+                strncpy(model, optarg, CSP_MAX_STRING);
+                csp_conf.model = model;
                 break;
-#if (CSP_HAVE_LIBZMQ)
-            case 'z':
-                zmq_device = optarg;
+            case 'r':
+                strncpy(revision, optarg, CSP_MAX_STRING);
+                csp_conf.revision = revision;
                 break;
-#endif
-	    	case 'u':
-				udp_device = optarg;
-				break;
-			case 'p':
-				udp_ports = atoi(optarg);
-				break;
+            case 'v':
+                csp_conf.version = atoi(optarg);
+                break;
            default:
                 csp_print("Usage:\n"
                        " -d <debug-level> packet debug level\n"
-                       " -c <can-device>  add CAN device\n"
-                       " -k <kiss-device> add KISS device (serial)\n"
-                       " -z <zmq-device>  add ZMQ device, e.g. \"localhost\"\n"
-		       		   " -u <udp-device>  add UDP device, e.g. \"localhost\"\n"
-					   " -p <udp-port-base> base port for UDP sender, Listener is +1\n"
-		);
+                       " -h <hostname> also used to open <hostname>,yaml\n"
+                       " -m <model\n"
+                       " -r <revision\n"
+                       " -v <csp version (1/2)\n"
+            		);
                 exit(1);
                 break;
         }
     }
 
+    if(strlen(hostname) == 0) {
+        csp_print("Missing Hostname - can't open yaml file\n");
+        exit(1);
+    }
+    snprintf(yamlfn, CSP_MAX_STRING + 10, "yaml/%s.yaml", hostname);
+
     csp_print("Initializing CSP Bridge\n");
 
     /* Init CSP */
     csp_init();
+    csp_yaml_init(yamlfn,NULL);
+    csp_print("CSP Bridge - v %d %s %s %s\n",csp_conf.version, csp_conf.hostname, csp_conf.model, csp_conf.revision);
 
     /* Start router */
     bridge_start();
 
     /* Add interfaces - 2 required */
     csp_iface_t * bridge_iface[2] = { NULL, NULL };
-	int bridge_iface_idx = 0;
+    int bridge_idx = 0;
 
-    if (kiss_device) {
-        csp_usart_conf_t conf = {
-            .device = kiss_device,
-            .baudrate = 115200, /* supported on all platforms */
-            .databits = 8,
-            .stopbits = 1,
-            .paritysetting = 0,
-            .checkparity = 0};
-        int error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME,  &bridge_iface[bridge_iface_idx]);
-        if (error != CSP_ERR_NONE) {
-            csp_print("failed to add KISS interface [%s], error: %d\n", kiss_device, error);
-            exit(1);
+    // fetch interfaces setup in yaml - must be 2
+	csp_iface_t * ifc = csp_iflist_get();
+	while (ifc) {
+        // skip loopback
+        if (strncmp(ifc->name, CSP_IF_LOOPBACK_NAME, CSP_IFLIST_NAME_MAX) != 0) {
+            bridge_iface[bridge_idx] = ifc;
+            bridge_idx++;
         }
-		bridge_iface_idx++;
-		if(bridge_iface_idx > 2) {
-			csp_print("Too many bridge interfaces specified\n");
-			exit(2);
-		}
-    }
-#if (CSP_HAVE_LIBSOCKETCAN)
-    if (can_device) {
-        int error = csp_can_socketcan_open_and_add_interface(can_device, CSP_IF_CAN_DEFAULT_NAME, 0, false, &bridge_iface[bridge_iface_idx]);
-        if (error != CSP_ERR_NONE) {
-            csp_print("failed to add CAN interface [%s], error: %d\n", can_device, error);
-            exit(1);
-        }
-		bridge_iface_idx++;
-		if(bridge_iface_idx > 2) {
-			csp_print("Too many bridge interfaces specified\n");
-			exit(2);
-		}
-     }
-#endif
-#if (CSP_HAVE_LIBZMQ)
-    if (zmq_device) {
-        int error = csp_zmqhub_init(0, zmq_device, 0, &bridge_iface[bridge_iface_idx]);
-        if (error != CSP_ERR_NONE) {
-            csp_print("failed to add ZMQ interface [%s], error: %d\n", zmq_device, error);
-            exit(1);
-        }
- 		bridge_iface_idx++;
-		if(bridge_iface_idx > 2) {
-			csp_print("Too many bridge interfaces specified\n");
-			exit(2);
-		}
-    }
-#endif
-    if (udp_device) {
-		csp_if_udp_conf_t udp_ifconf;
-		csp_iface_t udp_iface = {0};
-		bridge_iface[bridge_iface_idx] = &udp_iface;
-		udp_ifconf.host = udp_device;
-		udp_ifconf.lport = udp_ports++;
-		udp_ifconf.rport = udp_ports++;
-		
-        csp_if_udp_init(bridge_iface[bridge_iface_idx], &udp_ifconf);
- 		bridge_iface_idx++;
-		if(bridge_iface_idx > 2) {
-			csp_print("Too many bridge interfaces specified\n");
-			exit(2);
-		}
+		ifc = ifc->next;
+	}
+
+    if(bridge_idx != 2) {
+        csp_print("Incorrect number of interfaces - only 2 allowed to bridge\n");
+        exit(2);
     }
 
 	csp_bridge_set_interfaces(bridge_iface[0], bridge_iface[1]);

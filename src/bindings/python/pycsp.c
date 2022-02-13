@@ -73,15 +73,26 @@ static void pycsp_free_csp_conn(PyObject * obj) {
 	PyCapsule_SetPointer(obj, &CSP_POINTER_HAS_BEEN_FREED);
 }
 
+#define CSP_NUM_SOCKETS 10
+static csp_socket_t hack_sockets[CSP_NUM_SOCKETS];
+static int hack_socket_allocated[CSP_NUM_SOCKETS];
+
 static void pycsp_free_csp_socket(PyObject * obj) {
-#if 0
+
 	csp_socket_t * socket = get_obj_as_socket(obj, true);
 
 // see pycsp_csp_socket for details on the hack
 	if (socket) {
-		csp_close(socket);
+		int hack_socket_idx = 0;
+		while(hack_socket_idx < CSP_NUM_SOCKETS) {
+			if(socket == &hack_sockets[hack_socket_idx]) {
+				hack_socket_allocated[hack_socket_idx] = 0;
+				break;
+			}
+			hack_socket_idx++;
+		}
 	}
-#endif
+
 	PyCapsule_SetPointer(obj, &CSP_POINTER_HAS_BEEN_FREED);
 }
 
@@ -136,21 +147,22 @@ static PyObject * pycsp_get_revision(PyObject * self, PyObject * args) {
 // also csp_free() is used to free csp_conn_t * so that is broke as well
 // NOTE: this hack allocates 10 sockets.... period - no reuse
 
-#define CSP_NUM_SOCKETS 10
-static csp_socket_t hack_sockets[CSP_NUM_SOCKETS];
-static int hack_socket_idx = 0;
-
 static PyObject * pycsp_socket(PyObject * self, PyObject * args) {
 	uint32_t opts = CSP_SO_NONE;
 	csp_socket_t * socket = NULL;
+	int hack_socket_idx = 0;
 
 	if (!PyArg_ParseTuple(args, "|I", &opts)) {
 		return NULL;  // TypeError is thrown
 	}
 
 	// Allocate static socket structure
-	if(hack_socket_idx < CSP_NUM_SOCKETS) {
-		socket = &hack_sockets[hack_socket_idx];
+	while(hack_socket_idx < CSP_NUM_SOCKETS) {
+		if(hack_socket_allocated[hack_socket_idx] == 0) {
+			socket = &hack_sockets[hack_socket_idx];
+			hack_socket_allocated[hack_socket_idx] = 1;
+			break;
+		}
 		hack_socket_idx++;
 	}
 	if (socket == NULL) {
