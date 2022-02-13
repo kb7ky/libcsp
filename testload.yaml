@@ -22,7 +22,7 @@
 #
 - name: "ZMQ0"
   driver: "zmq"
-  server: "192.168.64.1"
+  server: "192.168.64.4"
   addr: 16
   netmask: 2
   default: true

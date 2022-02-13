@@ -6,13 +6,12 @@ RUN apt-get update && apt-get install --no-install-recommends -y libczmq4 && \
 	apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN useradd --create-home csp
-COPY --from=builder-image libcsp/build/examples /home/csp/bin
+COPY --from=builder-image libcsp/build/examples /home/csp/apps
+Copy --from=builder-image test /home/csp/apps
 
 USER csp
 
 EXPOSE 6000/tcp
 EXPOSE 7000/tcp
-EXPOSE 6001/udp
-EXPOSE 6002/udp
 
-CMD ["/home/csp/bin/csp_bridge"]
+CMD ["/home/csp/bin/zmqproxy"]
