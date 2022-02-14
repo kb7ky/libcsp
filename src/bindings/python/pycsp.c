@@ -77,11 +77,8 @@ static void pycsp_free_csp_conn(PyObject * obj) {
 static csp_socket_t hack_sockets[CSP_NUM_SOCKETS];
 static int hack_socket_allocated[CSP_NUM_SOCKETS];
 
-static void pycsp_free_csp_socket(PyObject * obj) {
-
-	csp_socket_t * socket = get_obj_as_socket(obj, true);
-
-// see pycsp_csp_socket for details on the hack
+static void hack_free_socket(csp_socket_t * socket) {
+	// see pycsp_csp_socket for details on the hack
 	if (socket) {
 		int hack_socket_idx = 0;
 		while(hack_socket_idx < CSP_NUM_SOCKETS) {
@@ -92,8 +89,31 @@ static void pycsp_free_csp_socket(PyObject * obj) {
 			hack_socket_idx++;
 		}
 	}
+}
 
+static void pycsp_free_csp_socket(PyObject * obj) {
+	csp_socket_t * sock = get_obj_as_socket(obj, true);
+	if (sock) {
+		hack_free_socket(sock);
+	}
 	PyCapsule_SetPointer(obj, &CSP_POINTER_HAS_BEEN_FREED);
+}
+
+static PyObject *pycsp_free_socket(PyObject * self, PyObject * args) {
+	PyObject * socket_capsule;
+	if (!PyArg_ParseTuple(args, "O", &socket_capsule)) {
+		return NULL;  // TypeError is thrown
+	}
+
+	csp_socket_t * socket = get_obj_as_socket(socket_capsule, false);
+	if (socket == NULL) {
+		return NULL;
+	}
+
+	hack_free_socket(socket);
+
+	PyCapsule_SetPointer(socket_capsule, &CSP_POINTER_HAS_BEEN_FREED);
+	Py_RETURN_NONE;
 }
 
 static PyObject * pycsp_service_handler(PyObject * self, PyObject * args) {
@@ -990,6 +1010,7 @@ static PyMethodDef methods[] = {
 	{"get_model", pycsp_get_model, METH_NOARGS, ""},
 	{"get_revision", pycsp_get_revision, METH_NOARGS, ""},
 	{"socket", pycsp_socket, METH_VARARGS, ""},
+	{"free_socket", pycsp_free_socket, METH_VARARGS, ""},
 	{"accept", pycsp_accept, METH_VARARGS, ""},
 	{"read", pycsp_read, METH_VARARGS, ""},
 	{"send", pycsp_send, METH_VARARGS, ""},
