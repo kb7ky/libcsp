@@ -9,6 +9,7 @@
 #include <csp/drivers/usart.h>
 #include <csp/drivers/can_socketcan.h>
 #include <csp/csp_yaml.h>
+#include <csp/csp_crc32.h>
 #include <endian.h>
 
 #define SOCKET_CAPSULE     "csp_socket_t"
@@ -165,7 +166,7 @@ static PyObject * pycsp_get_revision(PyObject * self, PyObject * args) {
 //    	csp_socket_t sock = {0};
 // so this is a static array of socket structures which will be allocated
 // also csp_free() is used to free csp_conn_t * so that is broke as well
-// NOTE: this hack allocates 10 sockets.... period - no reuse
+// NOTE: this hack allocates 10 sockets.... period
 
 static PyObject * pycsp_socket(PyObject * self, PyObject * args) {
 	uint32_t opts = CSP_SO_NONE;
@@ -312,6 +313,16 @@ static PyObject* pycsp_sfp_recv(PyObject *self, PyObject *args) {
     return PyCapsule_New(dataout, PACKET_CAPSULE, pycsp_free_csp_buffer);
 }
 #endif
+
+static PyObject * pycsp_crc32_memory(PyObject * self, PyObject * args) {
+	Py_buffer inbuf;
+	int len;
+	if (!PyArg_ParseTuple(args, "y*i", &inbuf, &len)) {
+		return NULL;  // TypeError is thrown
+	}
+
+	return Py_BuildValue("i", csp_crc32_memory(inbuf.buf, len));
+}
 
 static PyObject * pycsp_transaction(PyObject * self, PyObject * args) {
 	uint8_t prio;
@@ -1072,6 +1083,7 @@ static PyMethodDef methods[] = {
 #ifdef CSP_HAVE_YAML
 	{"yaml_init", pycsp_yaml_init, METH_VARARGS, ""},
 #endif
+	{"crc32_memory", pycsp_crc32_memory, METH_VARARGS, ""},
 
 	/* sentinel */
 	{NULL, NULL, 0, NULL}};
