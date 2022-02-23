@@ -28,6 +28,18 @@ def getOptions():
     parser.add_argument("-v", "--version", type=int, default=1, help="CSP Protocol version")
     return parser.parse_args(sys.argv[1:])
 
+def loadRtable(hostname):
+    try:
+        rdfile = open("routes/" + hostname + ".routes", "r+")
+    except OSError:
+        print("Could not open route file for " + hostname)
+        return
+    with rdfile:
+        routes = rdfile.read()
+        libcsp.rtable_check(routes)
+        rdfile.close()
+        return
+
 def testSockets():
     oldsock = []
 
@@ -132,7 +144,10 @@ if __name__ == "__main__":
     libcsp.route_start_task()
     time.sleep(0.2)  # allow router task startup
     
-    libcsp.yaml_init("yaml/" + options.hostname + ".yaml", options.address)      
+    libcsp.yaml_init("yaml/" + options.hostname + ".yaml", options.address)
+
+    loadRtable(options.hostname)
+
  #  libcsp.rtable_load("0/0 ZMQHUB")
     print(libcsp.get_hostname())
     print(libcsp.get_model())

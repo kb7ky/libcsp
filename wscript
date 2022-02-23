@@ -256,5 +256,10 @@ def build(ctx):
                         lib=ctx.env.LIBS,
                         use='csp')
 
+        ctx.program(source='examples/kiss_crc.c',
+                    target='examples/kiss_crc',
+                    lib=ctx.env.LIBS,
+                    use='csp')
+
 def dist(ctx):
     ctx.excl = 'build/* **/.* **/*.pyc **/*.o **/*~ *.tar.gz'
