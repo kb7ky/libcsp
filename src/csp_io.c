@@ -25,39 +25,6 @@
 extern csp_queue_handle_t csp_promisc_queue;
 #endif
 
-csp_socket_t * csp_socket(uint32_t opts) {
-
-	/* Validate socket options */
-#if (CSP_USE_RDP == 0)
-	if (opts & CSP_SO_RDPREQ) {
-		csp_dbg_errno = CSP_DBG_ERR_UNSUPPORTED;
-		return NULL;
-	}
-#endif
-
-#if (CSP_USE_HMAC == 0)
-	if (opts & CSP_SO_HMACREQ) {
-		csp_dbg_errno = CSP_DBG_ERR_UNSUPPORTED;
-		return NULL;
-	}
-#endif
-
-	/* Drop packet if reserved flags are set */
-	if (opts & ~(CSP_SO_RDPREQ | CSP_SO_HMACREQ | CSP_SO_CRC32REQ | CSP_SO_CONN_LESS)) {
-		csp_dbg_errno = CSP_DBG_ERR_UNSUPPORTED;
-		return NULL;
-	}
-
-	/* Use CSP buffers instead? */
-	csp_socket_t * sock = NULL;//csp_conn_allocate(CONN_SERVER);
-	if (sock == NULL)
-		return NULL;
-
-	sock->opts = opts;
-
-	return sock;
-}
-
 csp_conn_t * csp_accept(csp_socket_t * sock, uint32_t timeout) {
 
 	if ((sock == NULL) || (sock->rx_queue == NULL)) {
@@ -112,28 +79,57 @@ void csp_id_copy(csp_id_t * target, csp_id_t * source) {
 	target->flags = source->flags;
 }
 
-int csp_send_direct(csp_id_t idout, csp_packet_t * packet, int from_me) {
+void csp_send_direct(csp_id_t idout, csp_packet_t * packet, csp_iface_t * routed_from) {
 
-	int ret;
+	int from_me = (routed_from == NULL ? 1 : 0);
 
 	/* Try to find the destination on any local subnets */
-	csp_iface_t * local_interface = csp_iflist_get_by_subnet(idout.dst);
-	if (local_interface) {
-		idout.src = local_interface->addr;
-		ret = csp_send_direct_iface(idout, packet, local_interface, CSP_NO_VIA_ADDRESS, 1);
+	int via = CSP_NO_VIA_ADDRESS;
+	csp_iface_t * iface = NULL;
+	csp_packet_t * copy = NULL;
+	int local_found = 0;
 
-	/* Otherwise, resort to the routing table for help */		
-	} else {
-		csp_route_t * route = csp_rtable_find_route(idout.dst);
-		if (route == NULL) {
-			csp_dbg_conn_noroute++;
-			return CSP_ERR_TX;
+	while ((iface = csp_iflist_get_by_subnet(idout.dst, iface)) != NULL) {
+		
+		/* Do not send back to same inteface (split horizon) 
+		 * This check is is similar to that below, but faster */
+		if (iface == routed_from) {
+			continue;
 		}
-		idout.src = route->iface->addr;
-		ret = csp_send_direct_iface(idout, packet, route->iface, route->via, 1);
-	}
-	return ret;
 
+		/* Do not send to interface with similar subnet (split horizon) */
+		if (csp_iflist_is_within_subnet(iface->addr, routed_from)) {
+			continue;
+		}
+
+		/* Apply outgoing interface address to packet */
+		idout.src = iface->addr;
+		
+		/* Todo: Find an elegant way to avoid making a copy when only a single destination interface
+		 * is found. But without looping the list twice. And without using stack memory.
+		 * Is this even possible? */
+		copy = csp_buffer_clone(packet);
+		csp_send_direct_iface(idout, copy, iface, via, from_me);
+
+		local_found = 1;
+
+	}
+
+	/* If the above worked, we don't want to look at the routing table */
+	if (local_found == 1) {
+		csp_buffer_free(packet);
+		return;
+	}
+
+	/* Try to send via routing table */
+	csp_route_t * route = csp_rtable_find_route(idout.dst);
+	if (route != NULL) {
+		csp_send_direct_iface(idout, packet, route->iface, route->via, from_me);
+		return;
+	}
+
+	csp_buffer_free(packet);
+	
 }
 
 __attribute__((weak)) void csp_output_hook(csp_id_t idout, csp_packet_t * packet, csp_iface_t * iface, uint16_t via, int from_me) {
@@ -142,12 +138,7 @@ __attribute__((weak)) void csp_output_hook(csp_id_t idout, csp_packet_t * packet
 	return;
 }
 
-int csp_send_direct_iface(csp_id_t idout, csp_packet_t * packet, csp_iface_t * iface, uint16_t via, int from_me) {
-
-	if (iface == NULL) {
-		csp_dbg_conn_noroute++;
-		goto err;
-	}
+void csp_send_direct_iface(csp_id_t idout, csp_packet_t * packet, csp_iface_t * iface, uint16_t via, int from_me) {
 
 	csp_output_hook(idout, packet, iface, via, from_me);
 
@@ -201,12 +192,13 @@ int csp_send_direct_iface(csp_id_t idout, csp_packet_t * packet, csp_iface_t * i
 
 	iface->tx++;
 	iface->txbytes += bytes;
-	return CSP_ERR_NONE;
+
+	return;
 
 tx_err:
+	csp_buffer_free(packet);
 	iface->tx_error++;
-err:
-	return CSP_ERR_TX;
+	return;
 }
 
 void csp_send(csp_conn_t * conn, csp_packet_t * packet) {
@@ -229,10 +221,8 @@ void csp_send(csp_conn_t * conn, csp_packet_t * packet) {
 	}
 #endif
 
-	if (csp_send_direct(conn->idout, packet, 1) != CSP_ERR_NONE) {
-		csp_buffer_free(packet);
-		return;
-	}
+	csp_send_direct(conn->idout, packet, NULL);
+
 }
 
 void csp_send_prio(uint8_t prio, csp_conn_t * conn, csp_packet_t * packet) {
@@ -329,10 +319,8 @@ void csp_sendto(uint8_t prio, uint16_t dest, uint8_t dport, uint8_t src_port, ui
 	packet->id.sport = src_port;
 	packet->id.pri = prio;
 
-	if (csp_send_direct(packet->id, packet, 1) != CSP_ERR_NONE) {
-		csp_buffer_free(packet);
-		return;
-	}
+	csp_send_direct(packet->id, packet, NULL);
+
 }
 
 void csp_sendto_reply(const csp_packet_t * request_packet, csp_packet_t * reply_packet, uint32_t opts) {
