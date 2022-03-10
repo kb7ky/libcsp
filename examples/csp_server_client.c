@@ -108,6 +108,10 @@ void client(void) {
 
 		/* 2. Get packet buffer for message/data */
 		csp_packet_t * packet = csp_buffer_get(100);
+        if (csp_dbg_packet_print >= 1) {
+            csp_print("Buffers left %d\n", csp_buffer_remaining());
+        }
+        
 		if (packet == NULL) {
 			/* Could not get buffer element */
 			csp_print("Failed to get CSP buffer\n");
@@ -147,11 +151,14 @@ int main(int argc, char * argv[]) {
 #endif
     const char * rtable = NULL;
     int opt;
-    while ((opt = getopt(argc, argv, "a:d:r:c:k:z:tR:h")) != -1) {
+    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:h")) != -1) {
         switch (opt) {
             case 'a':
                 address = atoi(optarg);
                 break;
+			case 'd':
+				csp_dbg_packet_print++;
+				break;
             case 'r':
                 server_address = atoi(optarg);
                 break;
@@ -177,7 +184,7 @@ int main(int argc, char * argv[]) {
             default:
                 csp_print("Usage:\n"
                        " -a <address>     local CSP address\n"
-                       " -d <debug-level> debug level, 0 - 6\n"
+                       " -d increment debug level, 0 - 6\n"
                        " -r <address>     run client against server address\n"
                        " -c <can-device>  add CAN device\n"
                        " -k <kiss-device> add KISS device (serial)\n"

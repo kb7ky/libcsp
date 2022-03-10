@@ -27,7 +27,7 @@ int main(int argc, char * argv[]) {
 
     int opt;
 
-    while ((opt = getopt(argc, argv, "h:d:m:r:v:")) != -1) {
+    while ((opt = getopt(argc, argv, "h:dm:r:v:")) != -1) {
         switch (opt) {
 			case 'd':
 				csp_dbg_packet_print++;
@@ -49,7 +49,7 @@ int main(int argc, char * argv[]) {
                 break;
            default:
                 csp_print("Usage:\n"
-                       " -d <debug-level> packet debug level\n"
+                       " -d increment packet debug level\n"
                        " -h <hostname> also used to open <hostname>,yaml\n"
                        " -m <model\n"
                        " -r <revision\n"

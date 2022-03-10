@@ -7,4 +7,4 @@ docker build --no-cache -t csp-base-file -f Dockerfile-csp-base-file .
 docker build --no-cache -t csp-base-none -f Dockerfile-csp-base-none .
 docker build -t zmqproxy -f Dockerfile-zmqproxy .
 docker build -t cspbridge -f Dockerfile-cspbridge .
-docker build -t cspapps -f Dockerfile-test .
+# docker build -t cspapps -f Dockerfile-test .

@@ -250,6 +250,12 @@ def build(ctx):
                         use='csp')
 
         if ctx.env.CSP_HAVE_LIBZMQ:
+            ctx.program(source='examples/zmqtap.c',
+                        target='examples/zmqtap',
+                        lib=ctx.env.LIBS,
+                        use='csp')
+
+        if ctx.env.CSP_HAVE_LIBZMQ:
             ctx.program(source=['examples/csp_bridge.c',
                                 'examples/csp_bridge_{0}.c'.format(ctx.env.OS)],
                         target='examples/csp_bridge',

@@ -36,6 +36,14 @@ int csp_zmqhub_tx(csp_iface_t * iface, uint16_t via, csp_packet_t * packet) {
 
 	csp_id_prepend(packet);
 
+	/* Print header data */
+	if (csp_dbg_packet_print >= 3)	{
+		csp_print("ZMQTX Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
+			packet->id.src, packet->id.dst, packet->id.dport,
+			packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
+	}
+
+
 	/** 
 	 * While a ZMQ context is thread safe, sockets are NOT threadsafe, so by sharing drv->publisher, we 
 	 * need to have a lock around any calls that uses that */
@@ -78,10 +86,16 @@ void * csp_zmqhub_task(void * param) {
 			continue;
 		}
 
+		if ((datalen - HEADER_SIZE) > CSP_BUFFER_SIZE) {
+			csp_print("ZMQ RX %s: Too long datalen: %u - expected min %u bytes\n", drv->iface.name, datalen - HEADER_SIZE, CSP_BUFFER_SIZE);
+			zmq_msg_close(&msg);
+			continue;
+		}
+
 		// Create new csp packet
 		packet = csp_buffer_get(datalen - HEADER_SIZE);
 		if (packet == NULL) {
-			csp_print("RX %s: Failed to get csp_buffer(%u)\n", drv->iface.name, datalen);
+			csp_print("RX %s: Failed to get csp_buffer(%u) errno(%d)\n", drv->iface.name, datalen, csp_dbg_errno);
 			zmq_msg_close(&msg);
 			continue;
 		}
@@ -97,6 +111,23 @@ void * csp_zmqhub_task(void * param) {
 		/* Parse the frame and strip the ID field */
 		if (csp_id_strip(packet) != 0) {
 			drv->iface.rx_error++;
+			csp_buffer_free(packet);
+			continue;
+		}
+
+		/* Print header data */
+		if (csp_dbg_packet_print >= 3)	{
+			csp_print("ZMQRX Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
+			   packet->id.src, packet->id.dst, packet->id.dport,
+			   packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
+		}
+
+		if(packet->id.src == drv->iface.addr) {
+			if (csp_dbg_packet_print >= 4)	{
+				csp_print("ZMQRXDupe Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
+			   		packet->id.src, packet->id.dst, packet->id.dport,
+			   		packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
+			}
 			csp_buffer_free(packet);
 			continue;
 		}

@@ -104,7 +104,14 @@ void csp_send_direct(csp_id_t idout, csp_packet_t * packet, csp_iface_t * routed
 
 		/* Apply outgoing interface address to packet */
 		idout.src = iface->addr;
-		
+
+		if (csp_dbg_packet_print >= 2)	{
+			csp_print("cspSendDirect Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
+				packet->id.src, packet->id.dst, packet->id.dport,
+				packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
+		}
+
+
 		/* Todo: Find an elegant way to avoid making a copy when only a single destination interface
 		 * is found. But without looping the list twice. And without using stack memory.
 		 * Is this even possible? */
@@ -125,6 +132,12 @@ void csp_send_direct(csp_id_t idout, csp_packet_t * packet, csp_iface_t * routed
 	csp_route_t * route = csp_rtable_find_route(idout.dst);
 	if (route != NULL) {
 		csp_send_direct_iface(idout, packet, route->iface, route->via, from_me);
+		if (csp_dbg_packet_print >= 2)	{
+			csp_print("cspSendDirect2 Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
+				packet->id.src, packet->id.dst, packet->id.dport,
+				packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
+		}
+
 		return;
 	}
 
@@ -140,10 +153,20 @@ __attribute__((weak)) void csp_output_hook(csp_id_t idout, csp_packet_t * packet
 
 void csp_send_direct_iface(csp_id_t idout, csp_packet_t * packet, csp_iface_t * iface, uint16_t via, int from_me) {
 
+	/* Apply outgoing interface address to packet */
+	idout.src = iface->addr;
+
 	csp_output_hook(idout, packet, iface, via, from_me);
 
 	/* Copy identifier to packet (before crc and hmac) */
 	csp_id_copy(&packet->id, &idout);
+
+	if (csp_dbg_packet_print >= 2)	{
+		csp_print("cspSendDirectIface Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
+		packet->id.src, packet->id.dst, packet->id.dport,
+		packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
+	}
+
 
 #if (CSP_USE_PROMISC)
 	/* Loopback traffic is added to promisc queue by the router */
