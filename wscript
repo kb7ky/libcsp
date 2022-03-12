@@ -44,6 +44,7 @@ def options(ctx):
     # Drivers and interfaces (requires external dependencies)
     gr.add_option('--enable-if-zmqhub', action='store_true', help='Enable ZMQ interface')
     gr.add_option('--enable-can-socketcan', action='store_true', help='Enable Linux socketcan driver')
+    gr.add_option('--enable-can-tcpcan', action='store_true', help='Enable Linux tcpcan driver')
     gr.add_option('--with-driver-usart', default=None, metavar='DRIVER', help='Build USART driver. [linux, None]')
     gr.add_option('--enable-if-tun', action='store_true', help='Enable TUN interface')
 
@@ -148,6 +149,10 @@ def configure(ctx):
         ctx.env.append_unique('FILES_CSP', 'src/drivers/can/can_socketcan.c')
         ctx.check_cfg(package='libsocketcan', args='--cflags --libs', define_name='CSP_HAVE_LIBSOCKETCAN')
         ctx.env.append_unique('LIBS', ctx.env.LIB_LIBSOCKETCAN)
+
+    # Add tcpcan
+    if ctx.options.enable_can_tcpcan:
+        ctx.env.append_unique('FILES_CSP', 'src/drivers/can/can_tcpcan.c')
 
     # Add USART driver
     if ctx.options.with_driver_usart:
