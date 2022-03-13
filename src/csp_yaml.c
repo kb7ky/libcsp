@@ -164,7 +164,7 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 		csp_can_tcpcan_conf_t  * tcpcan_conf = calloc(1,sizeof(csp_can_tcpcan_conf_t));
 		tcpcan_conf->host = data->server;
 		tcpcan_conf->ecan240_port = atoi(data->remote_port);
-		tcpcan_conf->canport = atoi(device);
+		tcpcan_conf->canport = atoi(data->device);
 
 		int error = csp_can_tcpcan_open_and_add_interface(data->name, tcpcan_conf, true, &iface);
 		if (error != CSP_ERR_NONE) {
