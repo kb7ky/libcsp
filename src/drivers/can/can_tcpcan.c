@@ -27,6 +27,7 @@ typedef struct {
 	pthread_t rx_thread;
 	int socket;
 	int canport;
+	uint16_t ecan240_port;
 } can_tcp_context_t;
 
 static void tcpcan_free(can_tcp_context_t * ctx) {
@@ -102,7 +103,7 @@ static int csp_can_tx_frame(void * driver_data, uint32_t id, const uint8_t * dat
 
 	// Add in ECAN-240 Transparent mode header
 	ecan240hdr.canport = ctx->canport;
-	ecan240hdr.flags = 14;
+	ecan240hdr.flags = 14; // XXX - unknown how this field is defined
 
 	if(write(ctx->socket, &ecan240hdr, sizeof(ECAN240HDR)) != sizeof(ECAN240HDR)) {
 		csp_print("%s[%s]: write() failed to write ECR240 header, errno %d: %s\n", __FUNCTION__, ctx->name, errno, strerror(errno));
@@ -135,6 +136,11 @@ int csp_can_tcpcan_open_and_add_interface(const char * ifname, csp_can_tcpcan_co
 	}
 	ctx->socket = -1;
 	ctx->canport = ifconf->canport;
+	ctx->ecan240_port = ifconf->ecan240_port;
+
+	if(ctx->ecan240_port == 0) {
+		ctx->ecan240_port = ECAN240_TCP_PORT;
+	}
 
 	strncpy(ctx->name, ifname, sizeof(ctx->name) - 1);
 	ctx->iface.name = ctx->name;
@@ -158,7 +164,7 @@ int csp_can_tcpcan_open_and_add_interface(const char * ifname, csp_can_tcpcan_co
 
 	/* connect to the remote ECAN-240 server */
 	if(connect(ctx->socket, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-		csp_print("%s[%s]: Connect to %s failed\n", __FUNCTION__, ctx->name, ifconf->host);
+		csp_print("%s[%s]: Connect to %s:%d failed\n", __FUNCTION__, ctx->name, ifconf->host, ctx->ecan240_port);
 		tcpcan_free(ctx);
 		return CSP_ERR_INVAL;
 	}

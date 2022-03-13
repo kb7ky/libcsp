@@ -47,10 +47,10 @@ int main(int argc, char * argv[]) {
             case 'v':
                 csp_conf.version = atoi(optarg);
                 break;
-           default:
+            default:
                 csp_print("Usage:\n"
                        " -d increment packet debug level\n"
-                       " -h <hostname> also used to open <hostname>,yaml\n"
+                       " -h <hostname> also used to open <hostname>.yaml\n"
                        " -m <model\n"
                        " -r <revision\n"
                        " -v <csp version (1/2)\n"
@@ -92,7 +92,7 @@ int main(int argc, char * argv[]) {
 	}
 
     if(bridge_idx != 2) {
-        csp_print("Incorrect number of interfaces - only 2 allowed to bridge\n");
+        csp_print("Incorrect number of interfaces -  2 required to bridge\n");
         exit(2);
     }
 

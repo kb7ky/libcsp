@@ -12,14 +12,14 @@
 
 #define ECAN240_TCP_PORT 10003
 #define ECAN240_CAN_PORT 1
-#define CSP_TCPCAN_DEFAULT_NAME "TCAN0"
+#define CSP_TCPCAN_DEFAULT_NAME "TCAN"
 
 typedef struct {
 
 	/* Should be set before calling init */
 	char * host;
+   uint16_t ecan240_port;
 	int canport;
-   int ecan240port;
 
 	/* Internal parameters */
 
