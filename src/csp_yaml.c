@@ -10,6 +10,7 @@
 #include <csp/interfaces/csp_if_tun.h>
 #include <csp/interfaces/csp_if_udp.h>
 #include <csp/drivers/can_socketcan.h>
+#include <csp/drivers/can_tcpcan.h>
 #include <csp/drivers/usart.h>
 #include <csp/csp_debug.h>
 #include <yaml.h>
@@ -150,6 +151,28 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 
 	}
 #endif
+
+	/* TCAN - CAN over TCP to ECAN-240 */
+	else if (strcmp(data->driver, "tcan") == 0) {
+
+		/* Check for valid server */
+		if (!data->server || (!data->remote_port) || (!data->device)) {
+			csp_print("tcan: no host:port/ecan-240 can port configured\n");
+			return;
+		}
+
+		csp_can_tcpcan_conf_t  * tcpcan_conf = calloc(1,sizeof(csp_can_tcpcan_conf_t));
+		tcpcan_conf->host = data->server;
+		tcpcan_conf->ecan240_port = atoi(data->remote_port);
+		tcpcan_conf->canport = atoi(device);
+
+		int error = csp_can_tcpcan_open_and_add_interface(data->name, tcpcan_conf, true, &iface);
+		if (error != CSP_ERR_NONE) {
+			csp_print("failed to add TCAN interface [%s], error: %d\n", data->name, error);
+			return;
+		}
+
+	}
 
     /* Unsupported interface */
 	else {
