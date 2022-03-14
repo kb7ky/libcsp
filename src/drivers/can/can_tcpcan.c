@@ -28,11 +28,16 @@ typedef struct {
 	int socket;
 	int canport;
 	uint16_t ecan240_port;
+	char hostname[CSP_HOSTNAME_MAX + 1];
+	bool promisc;
 } can_tcp_context_t;
+
+/* fwd Decls */
+static int csp_can_tcpcan_connect(can_tcp_context_t * ctx);
 
 static void tcpcan_free(can_tcp_context_t * ctx) {
 
-	if (ctx) {
+	if (ctx) {	
 		if (ctx->socket >= 0) {
 			close(ctx->socket);
 		}
@@ -49,19 +54,46 @@ static void * tcpcan_rx_thread(void * arg) {
 		int nbytes;
 		ECAN240HDR ecan240hdr;
 
+		if(ctx->socket == -1) {
+			/* socket closed for some reason */
+			int res = csp_can_tcpcan_connect(ctx);
+			if(res != CSP_ERR_NONE) {
+				csp_print("%s[%s]: socket failed to reopen. err %d - sleep 5\n",  __FUNCTION__, ctx->name, res);
+				sleep(5);
+				continue;
+			}
+		}
+
 		// XXX - read from socket, remove ECAN-240 header
 		nbytes = read(ctx->socket, &ecan240hdr, sizeof(ECAN240HDR));
 		if (nbytes < 0) {
 			csp_print("%s[%s]: read() ecr240hdr failed, errno %d: %s\n", __FUNCTION__, ctx->name, errno, strerror(errno));
+			close(ctx->socket);
+			ctx->socket = -1;
+		continue;
+		}
+		if(nbytes == 0) {
+			/* socket closed - mark for reopen */
+			close(ctx->socket);
+			ctx->socket = -1;
 			continue;
 		}
 
 		nbytes = read(ctx->socket, &frame, sizeof(frame));
 		if (nbytes < 0) {
 			csp_print("%s[%s]: read() can pdu failed, errno %d: %s\n", __FUNCTION__, ctx->name, errno, strerror(errno));
+			close(ctx->socket);
+			ctx->socket = -1;
 			continue;
 		}
 
+		if(nbytes == 0) {
+			/* socket closed - mark for reopen */
+			close(ctx->socket);
+			ctx->socket = -1;
+			continue;
+		}
+		
 		if (nbytes != sizeof(frame)) {
 			csp_print("%s[%s]: Read incomplete CAN frame, size: %d, expected: %u bytes\n", __FUNCTION__, ctx->name, nbytes, (unsigned int)sizeof(frame));
 			continue;
@@ -122,8 +154,39 @@ int csp_can_tcpcan_set_promisc(const bool promisc, can_tcp_context_t * ctx) {
 	return CSP_ERR_NONE;
 }
 
+static int csp_can_tcpcan_connect(can_tcp_context_t * ctx) {
+	/* Create socket */
+	if ((ctx->socket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		csp_print("%s[%s]: socket() failed, error: %s\n", __FUNCTION__, ctx->name, strerror(errno));
+		return CSP_ERR_INVAL;
+	}
+
+	struct sockaddr_in addr;
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(ctx->ecan240_port);
+	addr.sin_addr.s_addr = inet_addr(ctx->hostname);
+
+	/* connect to the remote ECAN-240 server */
+	if(connect(ctx->socket, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+		csp_print("%s[%s]: Connect to %s:%d failed\n", __FUNCTION__, ctx->name, ctx->hostname, ctx->ecan240_port);
+		return CSP_ERR_INVAL;
+	}
+
+	/* Set filter mode */
+	if (csp_can_tcpcan_set_promisc(ctx->promisc, ctx) != CSP_ERR_NONE) {
+		csp_print("%s[%s]: csp_can_tcpcan_set_promisc() failed, error: %s\n", __FUNCTION__, ctx->name, strerror(errno));
+		return CSP_ERR_INVAL;
+	}
+
+	csp_print("%s[%s]: Connected to %s:%d canport %d\n", __FUNCTION__, ctx->name, ctx->hostname, ctx->ecan240_port, ctx->canport);
+
+	return CSP_ERR_NONE;
+}
 
 int csp_can_tcpcan_open_and_add_interface(const char * ifname, csp_can_tcpcan_conf_t * ifconf, bool promisc, csp_iface_t ** return_iface) {
+	int res = CSP_ERR_NONE;
+	
 	if (ifname == NULL) {
 		ifname = CSP_TCPCAN_DEFAULT_NAME;
 	}
@@ -137,6 +200,7 @@ int csp_can_tcpcan_open_and_add_interface(const char * ifname, csp_can_tcpcan_co
 	ctx->socket = -1;
 	ctx->canport = ifconf->canport;
 	ctx->ecan240_port = ifconf->ecan240_port;
+	strncpy(ctx->hostname, ifconf->host, sizeof(ctx->hostname) - 1);
 
 	if(ctx->ecan240_port == 0) {
 		ctx->ecan240_port = ECAN240_TCP_PORT;
@@ -148,35 +212,16 @@ int csp_can_tcpcan_open_and_add_interface(const char * ifname, csp_can_tcpcan_co
 	ctx->iface.driver_data = ctx;
 	ctx->ifdata.tx_func = csp_can_tx_frame;
 	ctx->ifdata.pbufs = NULL;
+	ctx->promisc = promisc;
 
-	/* Create socket */
-	if ((ctx->socket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		csp_print("%s[%s]: socket() failed, error: %s\n", __FUNCTION__, ctx->name, strerror(errno));
+	if((res = csp_can_tcpcan_connect(ctx)) != CSP_ERR_NONE) {
+		csp_print("%s[%s]: csp_can_add_interfacecsp_can_tcpcan_connect() failed, error: %d\n", __FUNCTION__, ctx->name, res);
 		tcpcan_free(ctx);
-		return CSP_ERR_INVAL;
-	}
-
-	struct sockaddr_in addr;
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(ECAN240_TCP_PORT);
-	addr.sin_addr.s_addr = inet_addr(ifconf->host);
-
-	/* connect to the remote ECAN-240 server */
-	if(connect(ctx->socket, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-		csp_print("%s[%s]: Connect to %s:%d failed\n", __FUNCTION__, ctx->name, ifconf->host, ctx->ecan240_port);
-		tcpcan_free(ctx);
-		return CSP_ERR_INVAL;
-	}
-
-	/* Set filter mode */
-	if (csp_can_tcpcan_set_promisc(promisc, ctx) != CSP_ERR_NONE) {
-		csp_print("%s[%s]: csp_can_tcpcan_set_promisc() failed, error: %s\n", __FUNCTION__, ctx->name, strerror(errno));
-		return CSP_ERR_INVAL;
+		return res;		
 	}
 
 	/* Add interface to CSP */
-	int res = csp_can_add_interface(&ctx->iface);
+	res = csp_can_add_interface(&ctx->iface);
 	if (res != CSP_ERR_NONE) {
 		csp_print("%s[%s]: csp_can_add_interface() failed, error: %d\n", __FUNCTION__, ctx->name, res);
 		tcpcan_free(ctx);
