@@ -37,7 +37,7 @@ static int csp_can_tcpcan_connect(can_tcp_context_t * ctx);
 
 static void tcpcan_free(can_tcp_context_t * ctx) {
 
-	if (ctx) {	
+	if (ctx) {
 		if (ctx->socket >= 0) {
 			close(ctx->socket);
 		}
@@ -70,7 +70,7 @@ static void * tcpcan_rx_thread(void * arg) {
 			csp_print("%s[%s]: read() ecr240hdr failed, errno %d: %s\n", __FUNCTION__, ctx->name, errno, strerror(errno));
 			close(ctx->socket);
 			ctx->socket = -1;
-		continue;
+			continue;
 		}
 		if(nbytes == 0) {
 			/* socket closed - mark for reopen */
@@ -133,6 +133,13 @@ static int csp_can_tx_frame(void * driver_data, uint32_t id, const uint8_t * dat
 	can_tcp_context_t * ctx = driver_data;
 	ECAN240HDR ecan240hdr;
 
+	if(ctx->socket == -1) {
+		if (csp_dbg_packet_print >= 4)	{
+			csp_print("%s[%s]: socket is closed\n",__FUNCTION__, ctx->name);
+		}
+		return CSP_ERR_TX;
+	}
+
 	// Add in ECAN-240 Transparent mode header
 	ecan240hdr.canport = ctx->canport;
 	ecan240hdr.flags = 14; // XXX - unknown how this field is defined
@@ -149,7 +156,6 @@ static int csp_can_tx_frame(void * driver_data, uint32_t id, const uint8_t * dat
 	return CSP_ERR_NONE;
 }
 
-
 int csp_can_tcpcan_set_promisc(const bool promisc, can_tcp_context_t * ctx) {
 	return CSP_ERR_NONE;
 }
@@ -158,6 +164,7 @@ static int csp_can_tcpcan_connect(can_tcp_context_t * ctx) {
 	/* Create socket */
 	if ((ctx->socket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		csp_print("%s[%s]: socket() failed, error: %s\n", __FUNCTION__, ctx->name, strerror(errno));
+		ctx->socket = -1;
 		return CSP_ERR_INVAL;
 	}
 
@@ -170,6 +177,7 @@ static int csp_can_tcpcan_connect(can_tcp_context_t * ctx) {
 	/* connect to the remote ECAN-240 server */
 	if(connect(ctx->socket, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 		csp_print("%s[%s]: Connect to %s:%d failed\n", __FUNCTION__, ctx->name, ctx->hostname, ctx->ecan240_port);
+		ctx->socket = -1;
 		return CSP_ERR_INVAL;
 	}
 
