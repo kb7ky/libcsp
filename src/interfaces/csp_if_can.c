@@ -183,6 +183,13 @@ int csp_can1_tx(csp_iface_t * iface, uint16_t via, csp_packet_t * packet) {
 	uint8_t data_bytes = 0;
 	uint8_t frame_buf[CAN_FRAME_SIZE];
 
+	/* Print header data */
+	if (csp_dbg_packet_print >= 3)	{
+		csp_print("TCANTX Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
+			packet->id.src, packet->id.dst, packet->id.dport,
+			packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
+	}
+
 	/**
 	 * CSP 1.x Frame Header:
 	 * Data offset is always 6.

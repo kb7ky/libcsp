@@ -154,7 +154,9 @@ __attribute__((weak)) void csp_output_hook(csp_id_t idout, csp_packet_t * packet
 void csp_send_direct_iface(csp_id_t idout, csp_packet_t * packet, csp_iface_t * iface, uint16_t via, int from_me) {
 
 	/* Apply outgoing interface address to packet */
-	idout.src = iface->addr;
+	if(from_me) {
+		idout.src = iface->addr;
+	}
 
 	csp_output_hook(idout, packet, iface, via, from_me);
 

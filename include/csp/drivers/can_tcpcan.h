@@ -13,6 +13,7 @@
 #define ECAN240_TCP_PORT 10003
 #define ECAN240_CAN_PORT 1
 #define CSP_TCPCAN_DEFAULT_NAME "TCAN"
+#define CSP_HOSTNAME_MAX 2048
 
 typedef struct {
 
