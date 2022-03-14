@@ -267,6 +267,13 @@ def build(ctx):
                         lib=ctx.env.LIBS,
                         use='csp')
 
+        if ctx.env.CSP_HAVE_LIBZMQ:
+            ctx.program(source=['examples/csp_gateway.c',
+                                'examples/csp_gateway_{0}.c'.format(ctx.env.OS)],
+                        target='examples/csp_gateway',
+                        lib=ctx.env.LIBS,
+                        use='csp')
+
         ctx.program(source='examples/kiss_crc.c',
                     target='examples/kiss_crc',
                     lib=ctx.env.LIBS,
