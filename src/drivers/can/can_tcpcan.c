@@ -15,7 +15,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <csp/interfaces/csp_if_can.h>
-#include <linux/can.h>
+// #include <linux/can.h>
 
 #include <csp/csp.h>
 
