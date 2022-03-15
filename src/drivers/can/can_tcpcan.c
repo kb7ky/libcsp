@@ -4,16 +4,22 @@
 
 #include <pthread.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <csp/csp_debug.h>
-#include <sys/socket.h>
 #include <unistd.h>
-#include <errno.h>
 #include <sys/ioctl.h>
+
+#ifdef WINDOZ
+#include <winsock2.h>
+#else
+#include <errno.h>
+#include <sys/socket.h>
 #include <net/if.h>
-#include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#endif /* WINDOZ */
+
 #include <csp/interfaces/csp_if_can.h>
 // #include <linux/can.h>
 
@@ -39,7 +45,11 @@ static void tcpcan_free(can_tcp_context_t * ctx) {
 
 	if (ctx) {
 		if (ctx->socket >= 0) {
+#ifdef WINDOZ
+			closesocket(ctx->socket);
+#else
 			close(ctx->socket);
+#endif
 		}
 		free(ctx);
 	}
@@ -65,31 +75,49 @@ static void * tcpcan_rx_thread(void * arg) {
 		}
 
 		// XXX - read from socket, remove ECAN-240 header
-		nbytes = read(ctx->socket, &ecan240hdr, sizeof(ECAN240HDR));
+		nbytes = recv(ctx->socket, &ecan240hdr, sizeof(ECAN240HDR),0);
 		if (nbytes < 0) {
+#ifdef WINDOZ
+			csp_print("%s[%s]: read() ecr240hdr failed, errno %d\n", __FUNCTION__, ctx->name, WSAGetLastError());
+			closesocket(ctx->socket);
+#else
 			csp_print("%s[%s]: read() ecr240hdr failed, errno %d: %s\n", __FUNCTION__, ctx->name, errno, strerror(errno));
 			close(ctx->socket);
+#endif
 			ctx->socket = -1;
 			continue;
 		}
 		if(nbytes == 0) {
 			/* socket closed - mark for reopen */
+#ifdef WINDOZ
+			closesocket(ctx->socket);
+#else
 			close(ctx->socket);
+#endif
 			ctx->socket = -1;
 			continue;
 		}
 
-		nbytes = read(ctx->socket, &frame, sizeof(frame));
+		nbytes = recv(ctx->socket, &frame, sizeof(frame),0);
 		if (nbytes < 0) {
+#ifdef WINDOZ
+			csp_print("%s[%s]: read() can pdu failed, errno %d\n", __FUNCTION__, ctx->name, WSAGetLastError());
+			closesocket(ctx->socket);
+#else
 			csp_print("%s[%s]: read() can pdu failed, errno %d: %s\n", __FUNCTION__, ctx->name, errno, strerror(errno));
 			close(ctx->socket);
+#endif
 			ctx->socket = -1;
 			continue;
 		}
 
 		if(nbytes == 0) {
 			/* socket closed - mark for reopen */
+#ifdef WINDOZ
+			closesocket(ctx->socket);
+#else
 			close(ctx->socket);
+#endif
 			ctx->socket = -1;
 			continue;
 		}
@@ -145,11 +173,19 @@ static int csp_can_tx_frame(void * driver_data, uint32_t id, const uint8_t * dat
 	ecan240hdr.flags = 14; // XXX - unknown how this field is defined
 
 	if(write(ctx->socket, &ecan240hdr, sizeof(ECAN240HDR)) != sizeof(ECAN240HDR)) {
+#ifdef WINDOZ
+		csp_print("%s[%s]: write() failed to write ECR240 header, errno %d\n", __FUNCTION__, ctx->name, WSAGetLastError());
+#else
 		csp_print("%s[%s]: write() failed to write ECR240 header, errno %d: %s\n", __FUNCTION__, ctx->name, errno, strerror(errno));
+#endif
 		return CSP_ERR_TX;
 	}
 	if(write(ctx->socket, &frame, sizeof(frame)) != sizeof(frame)) {
+#ifdef WINDOZ
+		csp_print("%s[%s]: write() failed to write CAN pdu, errno %d\n", __FUNCTION__, ctx->name, WSAGetLastError());
+#else
 		csp_print("%s[%s]: write() failed to write CAN pdu, errno %d: %s\n", __FUNCTION__, ctx->name, errno, strerror(errno));
+#endif
 		return CSP_ERR_TX;
 	}
 
@@ -163,7 +199,11 @@ int csp_can_tcpcan_set_promisc(const bool promisc, can_tcp_context_t * ctx) {
 static int csp_can_tcpcan_connect(can_tcp_context_t * ctx) {
 	/* Create socket */
 	if ((ctx->socket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+#ifdef WINDOZ
+		csp_print("%s[%s]: socket() failed, error: %d\n", __FUNCTION__, ctx->name, WSAGetLastError());
+#else
 		csp_print("%s[%s]: socket() failed, error: %s\n", __FUNCTION__, ctx->name, strerror(errno));
+#endif
 		ctx->socket = -1;
 		return CSP_ERR_INVAL;
 	}
@@ -183,7 +223,11 @@ static int csp_can_tcpcan_connect(can_tcp_context_t * ctx) {
 
 	/* Set filter mode */
 	if (csp_can_tcpcan_set_promisc(ctx->promisc, ctx) != CSP_ERR_NONE) {
+#ifdef WINDOZ
+		csp_print("%s[%s]: csp_can_tcpcan_set_promisc() failed, error: %d\n", __FUNCTION__, ctx->name, WSAGetLastError());
+#else
 		csp_print("%s[%s]: csp_can_tcpcan_set_promisc() failed, error: %s\n", __FUNCTION__, ctx->name, strerror(errno));
+#endif
 		return CSP_ERR_INVAL;
 	}
 
@@ -238,7 +282,11 @@ int csp_can_tcpcan_open_and_add_interface(const char * ifname, csp_can_tcpcan_co
 
 	/* Create receive thread */
 	if (pthread_create(&ctx->rx_thread, NULL, tcpcan_rx_thread, ctx) != 0) {
+#ifdef WINDOZ
+		csp_print("%s[%s]: pthread_create() failed, error: %d\n", __FUNCTION__, ctx->name, WSAGetLastError());
+#else
 		csp_print("%s[%s]: pthread_create() failed, error: %s\n", __FUNCTION__, ctx->name, strerror(errno));
+#endif
 		// tcpcan_free(ctx); // we already added it to CSP (no way to remove it)
 		return CSP_ERR_NOMEM;
 	}
@@ -255,12 +303,20 @@ int csp_can_tcpcan_stop(csp_iface_t * iface) {
 
 	int error = pthread_cancel(ctx->rx_thread);
 	if (error != 0) {
+#ifdef WINDOZ
+		csp_print("%s[%s]: pthread_cancel() failed, error: %d\n", __FUNCTION__, ctx->name, WSAGetLastError());
+#else
 		csp_print("%s[%s]: pthread_cancel() failed, error: %s\n", __FUNCTION__, ctx->name, strerror(errno));
+#endif
 		return CSP_ERR_DRIVER;
 	}
 	error = pthread_join(ctx->rx_thread, NULL);
 	if (error != 0) {
+#ifdef WINDOZ
+		csp_print("%s[%s]: pthread_join() failed, error: %d\n", __FUNCTION__, ctx->name, WSAGetLastError());
+#else
 		csp_print("%s[%s]: pthread_join() failed, error: %s\n", __FUNCTION__, ctx->name, strerror(errno));
+#endif
 		return CSP_ERR_DRIVER;
 	}
 	tcpcan_free(ctx);
