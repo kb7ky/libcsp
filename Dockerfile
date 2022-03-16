@@ -3,7 +3,8 @@
 FROM ubuntu:20.04 AS builder-image
 
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y  --no-install-recommends build-essential git python3 wget ca-certificates apt-transport-https pkg-config libczmq-dev python3-dev libsocketcan-dev libyaml-dev socat
+RUN apt-get update && apt-get install -y  --no-install-recommends build-essential git python3 wget ca-certificates apt-transport-https pkg-config libczmq-dev python3-dev libsocketcan-dev libyaml-dev socat python3-pip
+RUN pip install zmq
 
 # get certs so https to github will work
 RUN mkdir -p /usr/local/share/ca-certificates/cacert.org
