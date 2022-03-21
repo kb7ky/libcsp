@@ -23,6 +23,8 @@ static uint8_t server_address = 255;
 /* test mode, used for verifying that host & client can exchange packets over the loopback interface */
 static bool test_mode = false;
 static unsigned int server_received = 0;
+static int repeatCtr = -1;
+static int sendSize = 100;
 
 /* Server task - handles requests from clients */
 void server(void) {
@@ -81,17 +83,27 @@ void client(void) {
 
 	csp_print("Client task started");
 
+#if 0
 	unsigned int count = 'A';
+#endif
+    int running = true;
 
-	while (1) {
+	while (running == true) {
+
+        if(repeatCtr != -1) {
+            if(repeatCtr-- <= 0) {
+                running = false;
+                continue;
+            }
+        }
 
 		usleep(test_mode ? 200000 : 1000000);
 
 		/* Send ping to server, timeout 1000 mS, ping size 100 bytes */
-		int result = csp_ping(server_address, 1000, 100, CSP_O_NONE);
+		int result = csp_ping(server_address, 1000, sendSize, CSP_O_NONE);
 		csp_print("Ping address: %u, result %d [mS]\n", server_address, result);
         (void) result;
-
+#if 0
 		/* Send reboot request to server, the server has no actual implementation of csp_sys_reboot() and fails to reboot */
 		csp_reboot(server_address);
 		csp_print("reboot system request sent to address: %u\n", server_address);
@@ -132,15 +144,16 @@ void client(void) {
 
 		/* 6. Close connection */
 		csp_close(conn);
+#endif
 	}
-
+    exit(0);
 	return;
 }
 /* End of client task */
 
 /* main - initialization of CSP and start of server/client tasks */
 int main(int argc, char * argv[]) {
-
+    int portoffset = 0;
     uint8_t address = 0;
 #if (CSP_HAVE_LIBSOCKETCAN)
     const char * can_device = NULL;
@@ -151,7 +164,7 @@ int main(int argc, char * argv[]) {
 #endif
     const char * rtable = NULL;
     int opt;
-    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:h")) != -1) {
+    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:hp:i:s:")) != -1) {
         switch (opt) {
             case 'a':
                 address = atoi(optarg);
@@ -181,6 +194,15 @@ int main(int argc, char * argv[]) {
             case 'R':
                 rtable = optarg;
                 break;
+            case 'p':
+                portoffset = atoi(optarg);
+                break;
+            case 'i':
+                repeatCtr = atoi(optarg);
+                break;
+            case 's':
+                sendSize = atoi(optarg);
+                break;
             default:
                 csp_print("Usage:\n"
                        " -a <address>     local CSP address\n"
@@ -190,6 +212,9 @@ int main(int argc, char * argv[]) {
                        " -k <kiss-device> add KISS device (serial)\n"
                        " -z <zmq-device>  add ZMQ device, e.g. \"localhost\"\n"
                        " -R <rtable>      set routing table\n"
+                       " -p <portoffset>  value to add to 6000/7000\n"
+                       " -i <iteration count>  number of times to send - default forever\n"
+                       " -s <size of probes/ping> size of data sent\n"
                        " -t               enable test mode\n");
                 exit(1);
                 break;
@@ -231,7 +256,7 @@ int main(int argc, char * argv[]) {
 #endif
 #if (CSP_HAVE_LIBZMQ)
     if (zmq_device) {
-        int error = csp_zmqhub_init(0, zmq_device, 0, &default_iface);
+        int error = csp_zmqhub_init(0, zmq_device, 0, portoffset, &default_iface);
         if (error != CSP_ERR_NONE) {
             csp_print("failed to add ZMQ interface [%s], error: %d\n", zmq_device, error);
             exit(1);

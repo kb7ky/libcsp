@@ -129,7 +129,7 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 		}
 
 		// csp_zmqhub_init_filter2(data->name, data->server, addr, atoi(data->netmask), promisc, &iface);
-		csp_zmqhub_init(addr, data->server, promisc, &iface);
+		csp_zmqhub_init(addr, data->server, promisc, 0, &iface);
 
 	}
 #endif
@@ -157,15 +157,15 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 	else if (strcmp(data->driver, "tcan") == 0) {
 
 		/* Check for valid server */
-		if (!data->server || (!data->remote_port) || (!data->device)) {
-			csp_print("tcan: no host:port/ecan-240 can port configured\n");
+		if (!data->server || (!data->remote_port) || (!data->listen_port)) {
+			csp_print("tcan: no host:tx_port/host:rx_port can port configured\n");
 			return;
 		}
 
 		csp_can_tcpcan_conf_t  * tcpcan_conf = calloc(1,sizeof(csp_can_tcpcan_conf_t));
-		tcpcan_conf->host = data->server;
-		tcpcan_conf->ecan240_port = atoi(data->remote_port);
-		tcpcan_conf->canport = atoi(data->device);
+		strncpy(tcpcan_conf->host, data->server, CSP_HOSTNAME_MAX);
+		tcpcan_conf->tx_port = atoi(data->remote_port);
+		tcpcan_conf->rx_port = atoi(data->listen_port);
 
 		int error = csp_can_tcpcan_open_and_add_interface(data->name, tcpcan_conf, true, &iface);
 		if (error != CSP_ERR_NONE) {

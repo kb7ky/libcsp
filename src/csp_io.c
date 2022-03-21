@@ -131,6 +131,15 @@ void csp_send_direct(csp_id_t idout, csp_packet_t * packet, csp_iface_t * routed
 	/* Try to send via routing table */
 	csp_route_t * route = csp_rtable_find_route(idout.dst);
 	if (route != NULL) {
+		/* another split horizon test */
+		if(route->iface == routed_from) {
+			if (csp_dbg_packet_print >= 2)	{
+				csp_print("Routed packet to input iface - Dropped  - src: %u dst: %u\n", packet->id.src, packet->id.dst);
+			}
+			csp_buffer_free(packet);
+			return;
+		}
+
 		csp_send_direct_iface(idout, packet, route->iface, route->via, from_me);
 		if (csp_dbg_packet_print >= 2)	{
 			csp_print("cspSendDirect2 Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",

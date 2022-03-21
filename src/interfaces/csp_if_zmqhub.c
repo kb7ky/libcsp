@@ -8,6 +8,7 @@
 
 #include <csp/csp.h>
 #include <csp/csp_debug.h>
+#include "../csp_semaphore.h"
 #include <pthread.h>
 
 #include <csp/csp_id.h>
@@ -19,11 +20,18 @@ typedef struct {
 	void * publisher;
 	void * subscriber;
 	char name[CSP_IFLIST_NAME_MAX + 1];
+	int8_t * sent_addrs;					// table used to capture the csp_addresses we have sent to the Broker(network)
+	csp_bin_sem_t sent_addrs_lock;
 	csp_iface_t iface;
 } zmq_driver_t;
 
 /* Linux is fast, so we keep it simple by having a single lock */
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+/* forward DECLs */
+static void sa_init(zmq_driver_t *drv);
+static bool sa_check_addr(zmq_driver_t *drv, csp_packet_t *packet);
+static void sa_set_addr(zmq_driver_t *drv, int addr);
 
 /**
  * Interface transmit function
@@ -33,6 +41,9 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 int csp_zmqhub_tx(csp_iface_t * iface, uint16_t via, csp_packet_t * packet) {
 
 	zmq_driver_t * drv = iface->driver_data;
+
+	/* record the source csp address as "our" address */
+	sa_set_addr(drv, packet->id.src);
 
 	csp_id_prepend(packet);
 
@@ -122,7 +133,7 @@ void * csp_zmqhub_task(void * param) {
 			   packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
 		}
 
-		if(packet->id.src == drv->iface.addr) {
+		if(packet->id.src == drv->iface.addr || sa_check_addr(drv, packet) == false) {
 			if (csp_dbg_packet_print >= 4)	{
 				csp_print("ZMQRXDupe Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
 			   		packet->id.src, packet->id.dst, packet->id.dport,
@@ -153,13 +164,14 @@ int csp_zmqhub_make_endpoint(const char * host, uint16_t port, char * buf, size_
 int csp_zmqhub_init(uint16_t addr,
 					const char * host,
 					uint32_t flags,
+					uint16_t portoffset,
 					csp_iface_t ** return_interface) {
 
 	char pub[100];
-	csp_zmqhub_make_endpoint(host, CSP_ZMQPROXY_SUBSCRIBE_PORT, pub, sizeof(pub));
+	csp_zmqhub_make_endpoint(host, CSP_ZMQPROXY_SUBSCRIBE_PORT + portoffset, pub, sizeof(pub));
 
 	char sub[100];
-	csp_zmqhub_make_endpoint(host, CSP_ZMQPROXY_PUBLISH_PORT, sub, sizeof(sub));
+	csp_zmqhub_make_endpoint(host, CSP_ZMQPROXY_PUBLISH_PORT + portoffset, sub, sizeof(sub));
 
 	return csp_zmqhub_init_w_endpoints(addr, pub, sub, flags, return_interface);
 }
@@ -194,6 +206,9 @@ int csp_zmqhub_init_w_name_endpoints_rxfilter(const uint16_t addr,
 	pthread_attr_t attributes;
 	zmq_driver_t * drv = calloc(1, sizeof(*drv));
 	assert(drv != NULL);
+
+	/* send_addrs init - allocate array and setup sem for updating send_addrs array */
+	sa_init(drv);
 
 	if (ifname == NULL) {
 		ifname = CSP_ZMQHUB_IF_NAME;
@@ -336,6 +351,61 @@ int csp_zmqhub_init_filter2(const char * ifname, const char * host, uint16_t add
 	}
 
 	return CSP_ERR_NONE;
+}
+
+/* sa_check_addr
+ * check that we may have sent this packet to the broker.  if so, the broker will reflect it back
+ * to us.  We use this to detect this condition
+ * returns:
+ *			true - this address is OK to receive (not a reflection)
+ *    		false - this address is a reflection. Do not process
+ */
+static bool sa_check_addr(zmq_driver_t *drv, csp_packet_t *packet) {
+	bool ret = true;
+
+	// fast path - if we are the dst then take it reguardless of src
+	if(packet->id.dst == drv->iface.addr) {
+		return true;
+	}
+
+	// check if we sent this packet, and it is reflected back to us by the Broker
+	// we use a counter so that should an address move to another interface, we will eventually 
+	// figure this out
+	csp_bin_sem_wait(&drv->sent_addrs_lock, 0);
+
+	if(drv->sent_addrs[packet->id.src] > 0) {
+		// we have sent packets with this as the source
+		drv->sent_addrs[packet->id.src]--;
+		ret = false;
+	}
+
+	csp_bin_sem_post(&drv->sent_addrs_lock);
+	return ret;
+}
+
+/* sa_set_addr
+ * set this address as we are sending it to the broker. later we will probably see it as a reflection
+ */
+static void sa_set_addr(zmq_driver_t *drv, int addr) {
+	csp_bin_sem_wait(&drv->sent_addrs_lock,  0);
+
+	// XXX - add range check
+	drv->sent_addrs[addr]++;
+
+	csp_bin_sem_post(&drv->sent_addrs_lock);
+}
+
+/*
+ * send_addrs initialization
+ * Note:
+ *		v1 addresses are 5 bits long, v2 addresses are 14 bits long
+ */
+static void sa_init(zmq_driver_t *drv) {
+	uint32_t addrbits = csp_id_get_host_bits();
+	int addrsize = 2 ^ addrbits;
+	drv->sent_addrs = calloc(1, addrsize);
+
+	csp_bin_sem_init(&drv->sent_addrs_lock);
 }
 
 
