@@ -22,6 +22,7 @@ typedef struct {
 	char name[CSP_IFLIST_NAME_MAX + 1];
 	int8_t * sent_addrs;					// table used to capture the csp_addresses we have sent to the Broker(network)
 	csp_bin_sem_t sent_addrs_lock;
+	int topiclen;							// bytes of header used for topic
 	csp_iface_t iface;
 } zmq_driver_t;
 
@@ -54,6 +55,22 @@ int csp_zmqhub_tx(csp_iface_t * iface, uint16_t via, csp_packet_t * packet) {
 			packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
 	}
 
+	if(drv->topiclen > 0) {
+		packet->frame_begin -= drv->topiclen;
+		packet->frame_length += drv->topiclen;
+
+		uint8_t dest8 = (via != CSP_NO_VIA_ADDRESS) ? via : packet->id.dst;
+		uint16_t dest16 = htobe16(dest8);
+
+		switch(drv->topiclen) {
+			case 1:
+				memcpy(packet->frame_begin, &dest8, sizeof(dest8));
+				break;
+			case 2:
+				memcpy(packet->frame_begin, &dest16, sizeof(dest16));
+				break;
+		}
+	}
 
 	/** 
 	 * While a ZMQ context is thread safe, sockets are NOT threadsafe, so by sharing drv->publisher, we 
@@ -114,6 +131,12 @@ void * csp_zmqhub_task(void * param) {
 		// Copy the data from zmq to csp
 		const uint8_t * rx_data = zmq_msg_data(&msg);
 
+		// skip over the prepended topiclen
+		if(drv->topiclen > 0) {
+			rx_data += drv->topiclen;
+			datalen -= drv->topiclen;
+		}
+
 		csp_id_setup_rx(packet);
 
 		memcpy(packet->frame_begin, rx_data, datalen);
@@ -165,6 +188,7 @@ int csp_zmqhub_init(uint16_t addr,
 					const char * host,
 					uint32_t flags,
 					uint16_t portoffset,
+					int topiclen,
 					csp_iface_t ** return_interface) {
 
 	char pub[100];
@@ -173,13 +197,14 @@ int csp_zmqhub_init(uint16_t addr,
 	char sub[100];
 	csp_zmqhub_make_endpoint(host, CSP_ZMQPROXY_PUBLISH_PORT + portoffset, sub, sizeof(sub));
 
-	return csp_zmqhub_init_w_endpoints(addr, pub, sub, flags, return_interface);
+	return csp_zmqhub_init_w_endpoints(addr, pub, sub, flags, topiclen, return_interface);
 }
 
 int csp_zmqhub_init_w_endpoints(uint16_t addr,
 								const char * publisher_endpoint,
 								const char * subscriber_endpoint,
 								uint32_t flags,
+								int topiclen,
 								csp_iface_t ** return_interface) {
 
 	uint16_t * rxfilter = NULL;
@@ -191,6 +216,7 @@ int csp_zmqhub_init_w_endpoints(uint16_t addr,
 													 publisher_endpoint,
 													 subscriber_endpoint,
 													 flags,
+													 topiclen,
 													 return_interface);
 }
 
@@ -200,6 +226,7 @@ int csp_zmqhub_init_w_name_endpoints_rxfilter(const uint16_t addr,
 											  const char * publish_endpoint,
 											  const char * subscribe_endpoint,
 											  uint32_t flags,
+											  int topiclen,
 											  csp_iface_t ** return_interface) {
 
 	int ret;
@@ -219,6 +246,18 @@ int csp_zmqhub_init_w_name_endpoints_rxfilter(const uint16_t addr,
 	drv->iface.driver_data = drv;
 	drv->iface.nexthop = csp_zmqhub_tx;
 	drv->iface.mtu = CSP_ZMQ_MTU;  // there is actually no 'max' MTU on ZMQ, but assuming the other end is based on the same code
+
+	drv->topiclen = topiclen;
+	const csp_conf_t * conf = csp_get_conf();
+	if(conf->version > 1) {
+		drv->topiclen = 0;
+	}
+
+	/* NOTE: topiclen only valid for v1 - so header is 4 bytes */
+	if(drv->topiclen > (CSP_PACKET_PADDING_BYTES - 4)) {
+		csp_print("ZMQ INIT %s FAILED!!! : topiclen (%d) is larger than header buffer", drv->iface.name, drv->topiclen);
+		assert(1);
+	}
 
 	drv->context = zmq_ctx_new();
 	assert(drv->context != NULL);
@@ -264,18 +303,20 @@ int csp_zmqhub_init_w_name_endpoints_rxfilter(const uint16_t addr,
 	return CSP_ERR_NONE;
 }
 
-int csp_zmqhub_init_filter2(const char * ifname, const char * host, uint16_t addr, uint16_t netmask, int promisc, csp_iface_t ** return_interface) {
-	
+int csp_zmqhub_init_filter2(const char * ifname, const char * host, uint16_t addr, uint16_t netmask, int promisc, uint16_t portoffset, int topiclen, csp_iface_t ** return_interface) {
 	char pub[100];
-	csp_zmqhub_make_endpoint(host, CSP_ZMQPROXY_SUBSCRIBE_PORT, pub, sizeof(pub));
+	csp_zmqhub_make_endpoint(host, CSP_ZMQPROXY_SUBSCRIBE_PORT + portoffset, pub, sizeof(pub));
 
 	char sub[100];
-	csp_zmqhub_make_endpoint(host, CSP_ZMQPROXY_PUBLISH_PORT, sub, sizeof(sub));
+	csp_zmqhub_make_endpoint(host, CSP_ZMQPROXY_PUBLISH_PORT + portoffset, sub, sizeof(sub));
 
 	int ret;
 	pthread_attr_t attributes;
 	zmq_driver_t * drv = calloc(1, sizeof(*drv));
 	assert(drv != NULL);
+
+	/* send_addrs init - allocate array and setup sem for updating send_addrs array */
+	sa_init(drv);
 
 	if (ifname == NULL) {
 		ifname = CSP_ZMQHUB_IF_NAME;
@@ -287,10 +328,24 @@ int csp_zmqhub_init_filter2(const char * ifname, const char * host, uint16_t add
 	drv->iface.nexthop = csp_zmqhub_tx;
 	drv->iface.mtu = CSP_ZMQ_MTU;  // there is actually no 'max' MTU on ZMQ, but assuming the other end is based on the same code
 
+	/* offset in zmq message used for topic to control resonance from broker */
+	/* note: version 2 uses the csp header (pri | addr) so no topic len used */
+	drv->topiclen = topiclen;
+	const csp_conf_t * conf = csp_get_conf();
+	if(conf->version > 1) {
+		drv->topiclen = 0;
+	}
+
+	/* NOTE: topiclen only valid for v1 - so header is 4 bytes */
+	if(drv->topiclen > (CSP_PACKET_PADDING_BYTES - 4)) {
+		csp_print("ZMQ INIT %s FAILED!!! : topiclen (%d) is larger than header buffer", drv->iface.name, drv->topiclen);
+		assert(1);
+	}
+
 	drv->context = zmq_ctx_new();
 	assert(drv->context != NULL);
 
-	//csp_print("  ZMQ init %s: pub(tx): [%s], sub(rx): [%s]\n", drv->iface.name, pub, sub);
+	csp_print("ZMQ INIT %s: pub(tx): [%s]\n\t sub(rx): [%s]\n", drv->iface.name, pub, sub);
 
 	/* Publisher (TX) */
 	drv->publisher = zmq_socket(drv->context, ZMQ_PUB);
@@ -308,7 +363,6 @@ int csp_zmqhub_init_filter2(const char * ifname, const char * host, uint16_t add
 	assert(ret == 0);
 	zmq_connect(drv->subscriber, sub);
 	assert(ret == 0);
-
 
 	if (promisc) {
 

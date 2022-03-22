@@ -57,6 +57,7 @@ int csp_zmqhub_init(uint16_t addr,
                     const char * host,
                     uint32_t flags, 
                     uint16_t portoffset,
+                    int topiclen,
                     csp_iface_t ** return_interface);
 
 /**
@@ -72,6 +73,7 @@ int csp_zmqhub_init_w_endpoints(uint16_t addr,
                                 const char * publish_endpoint,
                                 const char * subscribe_endpoint,
                                 uint32_t flags,
+                                int topiclen,
                                 csp_iface_t ** return_interface);
 
 /**
@@ -92,7 +94,8 @@ int csp_zmqhub_init_w_name_endpoints_rxfilter(const uint16_t addr,
                                               const char * publish_endpoint,
                                               const char * subscribe_endpoint,
                                               uint32_t flags,
-                                              csp_iface_t ** return_interface);
+                                             int topiclen,
+                                             csp_iface_t ** return_interface);
 
 
 /**
@@ -106,4 +109,4 @@ int csp_zmqhub_init_w_name_endpoints_rxfilter(const uint16_t addr,
  * global broadcast address is also subscribed to. meaning a total of 3 * 4 filters.
  * 
  */
-int csp_zmqhub_init_filter2(const char * ifname, const char * host, uint16_t addr, uint16_t netmask, int promisc, csp_iface_t ** return_interface);
+int csp_zmqhub_init_filter2(const char * ifname, const char * host, uint16_t addr, uint16_t netmask, int promisc, uint16_t portoffset, int topiclen, csp_iface_t ** return_interface);

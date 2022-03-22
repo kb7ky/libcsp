@@ -128,8 +128,8 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 			promisc = (strcmp("true", data->promisc) == 0) ? 1 : 0;
 		}
 
-		// csp_zmqhub_init_filter2(data->name, data->server, addr, atoi(data->netmask), promisc, &iface);
-		csp_zmqhub_init(addr, data->server, promisc, 0, &iface);
+		csp_zmqhub_init_filter2(data->name, data->server, addr, atoi(data->netmask), promisc, 0, 0, &iface);
+		// csp_zmqhub_init(addr, data->server, promisc, 0, &iface);
 
 	}
 #endif

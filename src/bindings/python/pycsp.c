@@ -900,7 +900,7 @@ static PyObject * pycsp_zmqhub_init(PyObject * self, PyObject * args) {
 		return NULL;  // TypeError is thrown
 	}
 
-	int res = csp_zmqhub_init(addr, host, 0, 0, NULL);
+	int res = csp_zmqhub_init(addr, host, 0, 0, 0, NULL);
 	if (res != CSP_ERR_NONE) {
 		return PyErr_Error("csp_zmqhub_init()", res);
 	}
