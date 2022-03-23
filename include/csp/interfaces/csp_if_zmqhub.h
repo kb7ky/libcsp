@@ -94,8 +94,8 @@ int csp_zmqhub_init_w_name_endpoints_rxfilter(const uint16_t addr,
                                               const char * publish_endpoint,
                                               const char * subscribe_endpoint,
                                               uint32_t flags,
-                                             int topiclen,
-                                             csp_iface_t ** return_interface);
+                                              int topiclen,
+                                              csp_iface_t ** return_interface);
 
 
 /**

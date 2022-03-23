@@ -33,6 +33,8 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static void sa_init(zmq_driver_t *drv);
 static bool sa_check_addr(zmq_driver_t *drv, csp_packet_t *packet);
 static void sa_set_addr(zmq_driver_t *drv, int addr);
+static void set_filters(zmq_driver_t *drv, uint16_t addr, uint16_t hostmask, int version);
+
 
 /**
  * Interface transmit function
@@ -233,6 +235,7 @@ int csp_zmqhub_init_w_name_endpoints_rxfilter(const uint16_t addr,
 	pthread_attr_t attributes;
 	zmq_driver_t * drv = calloc(1, sizeof(*drv));
 	assert(drv != NULL);
+	const csp_conf_t * conf = csp_get_conf();
 
 	/* send_addrs init - allocate array and setup sem for updating send_addrs array */
 	sa_init(drv);
@@ -248,7 +251,6 @@ int csp_zmqhub_init_w_name_endpoints_rxfilter(const uint16_t addr,
 	drv->iface.mtu = CSP_ZMQ_MTU;  // there is actually no 'max' MTU on ZMQ, but assuming the other end is based on the same code
 
 	drv->topiclen = topiclen;
-	const csp_conf_t * conf = csp_get_conf();
 	if(conf->version > 1) {
 		drv->topiclen = 0;
 	}
@@ -312,6 +314,7 @@ int csp_zmqhub_init_filter2(const char * ifname, const char * host, uint16_t add
 
 	int ret;
 	pthread_attr_t attributes;
+	const csp_conf_t * conf = csp_get_conf();
 	zmq_driver_t * drv = calloc(1, sizeof(*drv));
 	assert(drv != NULL);
 
@@ -331,7 +334,6 @@ int csp_zmqhub_init_filter2(const char * ifname, const char * host, uint16_t add
 	/* offset in zmq message used for topic to control resonance from broker */
 	/* note: version 2 uses the csp header (pri | addr) so no topic len used */
 	drv->topiclen = topiclen;
-	const csp_conf_t * conf = csp_get_conf();
 	if(conf->version > 1) {
 		drv->topiclen = 0;
 	}
@@ -371,21 +373,7 @@ int csp_zmqhub_init_filter2(const char * ifname, const char * host, uint16_t add
 		assert(ret == 0);
 
 	} else {
-
-		/* This needs to be static, because ZMQ does not copy the filter value to the
-		 * outgoing packet for each setsockopt call */
-		static uint16_t filt[4][3];
-
-		for (int i = 0; i < 4; i++) {
-			//int i = CSP_PRIO_NORM;
-			filt[i][0] = __builtin_bswap16((i << 14) | addr);
-			filt[i][1] = __builtin_bswap16((i << 14) | addr | hostmask);
-			filt[i][2] = __builtin_bswap16((i << 14) | 16383);
-			ret = zmq_setsockopt(drv->subscriber, ZMQ_SUBSCRIBE, &filt[i][0], 2);
-			ret = zmq_setsockopt(drv->subscriber, ZMQ_SUBSCRIBE, &filt[i][1], 2);
-			ret = zmq_setsockopt(drv->subscriber, ZMQ_SUBSCRIBE, &filt[i][2], 2);
-		}
-
+		set_filters(drv, addr, hostmask, conf->version);
 	} 
 
 
@@ -407,6 +395,49 @@ int csp_zmqhub_init_filter2(const char * ifname, const char * host, uint16_t add
 	return CSP_ERR_NONE;
 }
 
+static void set_filters(zmq_driver_t *drv, uint16_t addr, uint16_t hostmask, int version) {
+	/* This needs to be static, because ZMQ does not copy the filter value to the
+	* outgoing packet for each setsockopt call */
+	static uint16_t filt[4][3];
+	static uint8_t filt8[3];
+
+	if(version != 1) {
+
+		for (int i = 0; i < 4; i++) {
+			//int i = CSP_PRIO_NORM;
+			filt[i][0] = __builtin_bswap16((i << 14) | addr);
+			filt[i][1] = __builtin_bswap16((i << 14) | addr | hostmask);
+			filt[i][2] = __builtin_bswap16((i << 14) | 16383);
+			zmq_setsockopt(drv->subscriber, ZMQ_SUBSCRIBE, &filt[i][0], 2);
+			zmq_setsockopt(drv->subscriber, ZMQ_SUBSCRIBE, &filt[i][1], 2);
+			zmq_setsockopt(drv->subscriber, ZMQ_SUBSCRIBE, &filt[i][2], 2);
+		}
+	} else {
+		if(drv->topiclen > 0) {
+			switch(drv->topiclen) {
+				case 1:
+					// topic is address, net address is on, and broadcast
+					filt8[0] = (uint8_t)(addr & 0xFF);
+					filt8[1] = (uint8_t)((addr | hostmask) & 0xFF);
+					filt8[2] = 255;
+					zmq_setsockopt(drv->subscriber, ZMQ_SUBSCRIBE, &filt8[0], 1);
+					zmq_setsockopt(drv->subscriber, ZMQ_SUBSCRIBE, &filt8[1], 1);
+					zmq_setsockopt(drv->subscriber, ZMQ_SUBSCRIBE, &filt8[2], 1);
+					break;
+				case 2:
+					// topic is address, net address is on, and broadcast
+					filt[0][0] = __builtin_bswap16(addr);
+					filt[0][1] = __builtin_bswap16(addr | hostmask);
+					filt[0][2] = __builtin_bswap16(16383);
+					zmq_setsockopt(drv->subscriber, ZMQ_SUBSCRIBE, &filt[0][0], 2);
+					zmq_setsockopt(drv->subscriber, ZMQ_SUBSCRIBE, &filt[0][1], 2);
+					zmq_setsockopt(drv->subscriber, ZMQ_SUBSCRIBE, &filt[0][2], 2);
+					break;
+			}
+		}
+	}
+	return;
+}
 /* sa_check_addr
  * check that we may have sent this packet to the broker.  if so, the broker will reflect it back
  * to us.  We use this to detect this condition

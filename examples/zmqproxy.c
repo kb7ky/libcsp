@@ -14,11 +14,15 @@ int debug = 0;
 const char * sub_str = "tcp://0.0.0.0:6000";
 const char * pub_str = "tcp://0.0.0.0:7000";
 char * logfile_name = NULL;
+int topiclen = 0;
+
 FILE * logfile;
 
 static void * task_capture(void * ctx) {
 
     int ret;
+	uint8_t *rx_data;
+	uint32_t topic = 0;
 
 	csp_print("Capture/logging task listening on %s\n", sub_str);
 
@@ -60,19 +64,41 @@ static void * task_capture(void * ctx) {
 			continue;
 		}
 
+		rx_data = zmq_msg_data(&msg);
+
+		if(topiclen > 0) {
+			switch(topiclen) {
+				case 1:
+					topic = (int)(*((uint8_t *)(rx_data)));
+					break;
+				case 2:
+					topic = (int)(*((uint16_t *)(rx_data)));
+					break;
+			}
+			rx_data += topiclen;
+			datalen -= topiclen;
+		}
+
 		/* Copy to packet */
 		csp_id_setup_rx(packet);
-		memcpy(packet->frame_begin, zmq_msg_data(&msg), datalen);
+		memcpy(packet->frame_begin, rx_data, datalen);
 		packet->frame_length = datalen;
 
 		/* Parse header */
 		csp_id_strip(packet);
 
 		/* Print header data */
-		csp_print("Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
+		if(topiclen > 0) {
+			csp_print("Topic: %04X, Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
+			   topic,
 			   packet->id.src, packet->id.dst, packet->id.dport,
 			   packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
-			   
+
+		} else {
+			csp_print("Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
+			   packet->id.src, packet->id.dst, packet->id.dport,
+			   packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
+		}	   
 
 		if (logfile) {
 			const char * delimiter = "--------\n";
@@ -91,7 +117,7 @@ int main(int argc, char ** argv) {
 	csp_conf.version = 1;
 
 	int opt;
-	while ((opt = getopt(argc, argv, "dhv:s:p:f:")) != -1) {
+	while ((opt = getopt(argc, argv, "dhv:s:p:f:t;")) != -1) {
 		switch (opt) {
 			case 'd':
 				debug = 1;
@@ -108,6 +134,9 @@ int main(int argc, char ** argv) {
 			case 'f':
 				logfile_name = optarg;
 				break;
+			case 't':
+				topiclen = atoi(optarg);
+				break;
 			default:
 				csp_print(
 					"Usage:\n"
@@ -115,6 +144,7 @@ int main(int argc, char ** argv) {
 					" -v VERSION\tcsp version\n"
 					" -s SUB_STR\tsubscriber port: tcp://localhost:7000\n"
 					" -p PUB_STR\tpublisher  port: tcp://localhost:6000\n"
+					" -t TOPICLEN\tTopicLength in front of csp packet (1 or 2). Only valid with version 1\n"
 					" -f LOGFILE\tLog to this file\n");
 				exit(1);
 				break;

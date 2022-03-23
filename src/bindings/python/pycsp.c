@@ -896,11 +896,14 @@ static PyObject * pycsp_cmp_clock_get(PyObject * self, PyObject * args) {
 static PyObject * pycsp_zmqhub_init(PyObject * self, PyObject * args) {
 	uint16_t addr;
 	char * host;
-	if (!PyArg_ParseTuple(args, "hs", &addr, &host)) {
+	uint32_t flags;
+	int topiclen;
+	uint16_t portoffset;
+	if (!PyArg_ParseTuple(args, "hsIHi", &addr, &host, &flags, &portoffset, &topiclen)) {
 		return NULL;  // TypeError is thrown
 	}
 
-	int res = csp_zmqhub_init(addr, host, 0, 0, 0, NULL);
+	int res = csp_zmqhub_init(addr, host, flags, portoffset, topiclen, NULL);
 	if (res != CSP_ERR_NONE) {
 		return PyErr_Error("csp_zmqhub_init()", res);
 	}

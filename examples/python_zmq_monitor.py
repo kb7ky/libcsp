@@ -7,6 +7,7 @@ def getOptions():
     parser = argparse.ArgumentParser(description="Parses command.")
     parser.add_argument("-b", "--zmq_broker", required=True, help="ZMQ broker address (tcp://host:port)")
     parser.add_argument("-v", "--version", required=False, default=1, help="CSP Address version (1 or 2)")
+    parser.add_argument("-t", "--topiclen", required=False, default=0, help="ZMQ topic length on front of csp packet")
     return parser.parse_args(sys.argv[1:])
 
 class CSP(object):
@@ -43,6 +44,11 @@ if __name__ == "__main__":
     total_value = 0
     for update_nbr in range (500):
         string = socket.recv()
-        csp = CSP(string[:4],1)
-        print (csp)
+        if topiclen > 0:
+            print ("Topic:", string[:topiclen])
+            csp = CSP(string[topiclen:4 + topiclen],1)
+        else:
+            csp = CSP(string[:4],1)
+
+       print (csp)
 
