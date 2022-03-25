@@ -21,9 +21,10 @@ class CSP(object):
             self.destination = (csp >> 20) & 0x1f
             self.dest_port = (csp >> 14) & 0x3f
             self.source_port = (csp >> 8) & 0x3f
-
+            self.flags = (csp) &  0x0f
+       
     def __str__(self):
-        return ("""v1: Pri: {} Src: {} Dst: {} Dport: {} Sport: {}""".format(
+        return ("""v1: Pri: {} Src: {} Dst: {} Dport: {} Sport: {} Flags: {}""".format(
             self.priority, self.source, self.destination, self.dest_port,
             self.source_port))
 
