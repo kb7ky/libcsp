@@ -172,7 +172,7 @@ void csp_send_direct_iface(csp_id_t idout, csp_packet_t * packet, csp_iface_t * 
 	/* Copy identifier to packet (before crc and hmac) */
 	csp_id_copy(&packet->id, &idout);
 
-	if (csp_dbg_packet_print >= 2)	{
+	if (csp_dbg_packet_print >= 3)	{
 		csp_print("cspSendDirectIface Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
 		packet->id.src, packet->id.dst, packet->id.dport,
 		packet->id.sport, packet->id.pri, packet->id.flags, packet->length);

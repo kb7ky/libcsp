@@ -9,8 +9,8 @@ import socket
 from turtle import end_fill
 
 # change for your need 
-localIP     = "127.0.0.1"
-localPort   = 58205
+localIP     = "0.0.0.0"
+localPort   = 58204
 # buffer for payload in IP Frame
 bufferSize  = 1024
 DLC_to_LEN = [0,1,2,3,4,5,6,7,8,12,16,20,24,32,48,64]

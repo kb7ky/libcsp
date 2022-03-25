@@ -88,12 +88,18 @@ static void * tcpcan_rx_thread(void * arg) {
 			continue;
 		}
 
+		/* add inspection of the PCAN header here - specificall looking for CANFD */
+		// XXX
+
 		/* Strip flags */
 		uint32_t can_id = ntohl(*((uint32_t*)&pcan_buff[24])) & 0x1fffffff;
 		uint8_t dlc = pcan_buff[21];
-		uint8_t * data = &pcan_buff[24];
+		uint8_t * data = &pcan_buff[28];
 
-		csp_print("%s[%s]: got DLC %d bytes from %d nbytes\n",__FUNCTION__, ctx->name, dlc, nbytes);
+		if (csp_dbg_packet_print >= 4)	{
+			csp_print("%s[%s]: got DLC %d bytes from %d nbytes\n",__FUNCTION__, ctx->name, dlc, nbytes);
+		}
+		
 		/* Call RX callbacsp_can_rx_frameck */
 		csp_can_rx(&ctx->iface, can_id, data, dlc, NULL);
 	}
@@ -280,7 +286,7 @@ int csp_can_tcpcan_open_and_add_interface(const char * ifname, csp_can_tcpcan_co
 	ctx->iface.interface_data = &ctx->ifdata;
 	ctx->iface.driver_data = ctx;
 	ctx->ifdata.tx_func = csp_can_tx_frame;
-#if 0
+#if 1  // Needed in open source version
 	ctx->ifdata.pbufs = NULL;
 #endif
 	ctx->promisc = promisc;

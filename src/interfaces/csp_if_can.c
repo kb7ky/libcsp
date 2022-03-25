@@ -57,15 +57,18 @@ int csp_can1_rx(csp_iface_t * iface, uint32_t id, const uint8_t * data, uint8_t 
 
 	/* Bind incoming frame to a packet buffer */
 	csp_packet_t * packet = csp_can_pbuf_find(ifdata, id, CFP_ID_CONN_MASK, task_woken);
+	if(packet != NULL) csp_print("ifcan rx packet: len %d mtu %d\n", packet->length, iface->mtu);
 	if (packet == NULL) {
 		if (CFP_TYPE(id) == CFP_BEGIN) {
 			packet = csp_can_pbuf_new(ifdata, id, task_woken);
 			if (packet == NULL) {
+				// csp_print("E1\n");
 				iface->rx_error++;
 				return CSP_ERR_NOMEM;
 			}
 		} else {
 			iface->frame++;
+			// csp_print("E2\n");
 			return CSP_ERR_INVAL;
 		}
 	}
@@ -77,32 +80,42 @@ int csp_can1_rx(csp_iface_t * iface, uint32_t id, const uint8_t * data, uint8_t 
 
 		case CFP_BEGIN:
 
+			// csp_print("B1: len %d mtu %d\n", packet->length, iface->mtu);
+
 			/* Discard packet if DLC is less than CSP id + CSP length fields */
 			if (dlc < (sizeof(uint32_t) + sizeof(uint16_t))) {
 				csp_dbg_can_errno = CSP_DBG_CAN_ERR_SHORT_BEGIN;
 				iface->frame++;
 				csp_can_pbuf_free(ifdata, packet, 1, task_woken);
+				// csp_print("BE1\n");
+
 				break;
 			}
 
 			iface->frame++;
 
 			csp_id1_setup_rx(packet);
+			// csp_print("B2: len %d mtu %d\n", packet->length, iface->mtu);
 
 			/* Copy CSP identifier (header) */
 			memcpy(packet->frame_begin, data, sizeof(uint32_t));
+			// csp_print("B3: len %d mtu %d\n", packet->length, iface->mtu);
 			packet->frame_length += sizeof(uint32_t);
+			// csp_print("B4: len %d mtu %d\n", packet->length, iface->mtu);
 
 			csp_id1_strip(packet);
 
 			/* Copy CSP length (of data) */
 			memcpy(&(packet->length), data + sizeof(uint32_t), sizeof(packet->length));
+			// csp_print("B5: len %d mtu %d\n", packet->length, iface->mtu);
 			packet->length = be16toh(packet->length);
+			// csp_print("B6: len %d mtu %d\n", packet->length, iface->mtu);
 
 			/* Check if frame exceeds MTU */
 			if (packet->length > iface->mtu) {
 				iface->rx_error++;
 				csp_can_pbuf_free(ifdata, packet, 1, task_woken);
+				// csp_print("BE2: len %d mtu %d\n", packet->length, iface->mtu);
 				break;
 			}
 
@@ -119,11 +132,14 @@ int csp_can1_rx(csp_iface_t * iface, uint32_t id, const uint8_t * data, uint8_t 
 
 		case CFP_MORE:
 
+			// csp_print("MF1\n");
+
 			/* Check 'remain' field match */
 			if ((uint16_t) CFP_REMAIN(id) != packet->remain - 1) {
 				csp_dbg_can_errno = CSP_DBG_CAN_ERR_FRAME_LOST;
 				csp_can_pbuf_free(ifdata, packet, 1, task_woken);
 				iface->frame++;
+				// csp_print("ME1\n");
 				break;
 			}
 
@@ -135,23 +151,36 @@ int csp_can1_rx(csp_iface_t * iface, uint32_t id, const uint8_t * data, uint8_t 
 				csp_dbg_can_errno = CSP_DBG_CAN_ERR_RX_OVF;
 				iface->frame++;
 				csp_can_pbuf_free(ifdata, packet, 1, task_woken);
+				// csp_print("ME2\n");
 				break;
 			}
+
+			// csp_print("MF2\n");
 
 			/* Copy dlc bytes into buffer */
 			memcpy(&packet->data[packet->rx_count], data + offset, dlc - offset);
 			packet->rx_count += dlc - offset;
+			// csp_print("MF3\n");
 
 			/* Check if more data is expected */
-			if (packet->rx_count != packet->length)
+			if (packet->rx_count != packet->length) {
+				// csp_print("ME3\n");
 				break;
+			}
+			// csp_print("MF4\n");
 
 			/* Free packet buffer */
 			csp_can_pbuf_free(ifdata, packet, 0, task_woken);
 
 			/* Data is available */
+			/* Print header data */
+			if (csp_dbg_packet_print >= 3)	{
+				csp_print("IFCANRX Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
+					packet->id.src, packet->id.dst, packet->id.dport,
+					packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
+			}
 			csp_qfifo_write(packet, iface, task_woken);
-
+			// csp_print("MFExit\n");
 			break;
 
 		default:
@@ -185,7 +214,7 @@ int csp_can1_tx(csp_iface_t * iface, uint16_t via, csp_packet_t * packet) {
 
 	/* Print header data */
 	if (csp_dbg_packet_print >= 3)	{
-		csp_print("TCANTX Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
+		csp_print("IFCANTX Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
 			packet->id.src, packet->id.dst, packet->id.dport,
 			packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
 	}
