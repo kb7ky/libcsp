@@ -15,6 +15,7 @@ const char * sub_str = "tcp://0.0.0.0:6000";
 const char * pub_str = "tcp://0.0.0.0:7000";
 char * logfile_name = NULL;
 int topiclen = 0;
+uint32_t topic = 0;
 
 FILE * logfile;
 
@@ -22,7 +23,6 @@ static void * task_capture(void * ctx) {
 
     int ret;
 	uint8_t *rx_data;
-	uint32_t topic = 0;
 
 	csp_print("Capture/logging task listening on %s\n", sub_str);
 

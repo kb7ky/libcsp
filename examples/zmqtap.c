@@ -14,13 +14,14 @@ int debug = 0;
 const char * pub_str = "tcp://0.0.0.0:7000";
 char * logfile_name = NULL;
 int topiclen = 0;
+uint32_t topic = 0;
+
 FILE * logfile;
 
 static void * tap_capture(void * ctx) {
 
     int ret;
 	uint8_t *rx_data;
-	uint32_t topic = 0;
 
 	csp_print("Capture/logging task listening on %s version %d\n", pub_str, csp_conf.version);
 
