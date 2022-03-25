@@ -20,7 +20,6 @@ static void * tap_capture(void * ctx) {
 
     int ret;
 	uint8_t *rx_data;
-	uint32_t topic = 0;
 
 	csp_print("Capture/logging task listening on %s version %d\n", pub_str, csp_conf.version);
 
