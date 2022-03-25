@@ -25,6 +25,8 @@ static bool test_mode = false;
 static unsigned int server_received = 0;
 static int repeatCtr = -1;
 static int sendSize = 100;
+static bool fullSend = false;
+static int clientFlags = CSP_O_NONE;
 
 /* Server task - handles requests from clients */
 void server(void) {
@@ -83,9 +85,7 @@ void client(void) {
 
 	csp_print("Client task started");
 
-#if 0
 	unsigned int count = 'A';
-#endif
     int running = true;
 
 	while (running == true) {
@@ -100,51 +100,52 @@ void client(void) {
 		usleep(test_mode ? 200000 : 1000000);
 
 		/* Send ping to server, timeout 1000 mS, ping size 100 bytes */
-		int result = csp_ping(server_address, 1000, sendSize, CSP_O_NONE);
+		int result = csp_ping(server_address, 1000, sendSize, clientFlags);
 		csp_print("Ping address: %u, result %d [mS]\n", server_address, result);
         (void) result;
-#if 0
-		/* Send reboot request to server, the server has no actual implementation of csp_sys_reboot() and fails to reboot */
-		csp_reboot(server_address);
-		csp_print("reboot system request sent to address: %u\n", server_address);
 
-		/* Send data packet (string) to server */
+        if(fullSend) {
+    		/* Send reboot request to server, the server has no actual implementation of csp_sys_reboot() and fails to reboot */
+	    	csp_reboot(server_address);
+		    csp_print("reboot system request sent to address: %u\n", server_address);
 
-		/* 1. Connect to host on 'server_address', port MY_SERVER_PORT with regular UDP-like protocol and 1000 ms timeout */
-		csp_conn_t * conn = csp_connect(CSP_PRIO_NORM, server_address, MY_SERVER_PORT, 1000, CSP_O_NONE);
-		if (conn == NULL) {
-			/* Connect failed */
-			csp_print("Connection failed\n");
-			return;
-		}
+		    /* Send data packet (string) to server */
 
-		/* 2. Get packet buffer for message/data */
-		csp_packet_t * packet = csp_buffer_get(100);
-        if (csp_dbg_packet_print >= 1) {
-            csp_print("Buffers left %d\n", csp_buffer_remaining());
-        }
+		    /* 1. Connect to host on 'server_address', port MY_SERVER_PORT with regular UDP-like protocol and 1000 ms timeout */
+		    csp_conn_t * conn = csp_connect(CSP_PRIO_NORM, server_address, MY_SERVER_PORT, 1000, clientFlags);
+		    if (conn == NULL) {
+			    /* Connect failed */
+			    csp_print("Connection failed\n");
+			    return;
+		    }
+
+		    /* 2. Get packet buffer for message/data */
+		    csp_packet_t * packet = csp_buffer_get(100);
+            if (csp_dbg_packet_print >= 1) {
+                csp_print("Buffers left %d\n", csp_buffer_remaining());
+            }
         
-		if (packet == NULL) {
-			/* Could not get buffer element */
-			csp_print("Failed to get CSP buffer\n");
-			return;
-		}
+		    if (packet == NULL) {
+			    /* Could not get buffer element */
+			    csp_print("Failed to get CSP buffer\n");
+			    return;
+		    }
 
-		/* 3. Copy data to packet */
-        memcpy(packet->data, "Hello world ", 12);
-        memcpy(packet->data + 12, &count, 1);
-        memset(packet->data + 13, 0, 1);
-        count++;
+		    /* 3. Copy data to packet */
+            memcpy(packet->data, "Hello world ", 12);
+            memcpy(packet->data + 12, &count, 1);
+            memset(packet->data + 13, 0, 1);
+            count++;
 
-		/* 4. Set packet length */
-		packet->length = (strlen((char *) packet->data) + 1); /* include the 0 termination */
+		    /* 4. Set packet length */
+		    packet->length = (strlen((char *) packet->data) + 1); /* include the 0 termination */
 
-		/* 5. Send packet */
-		csp_send(conn, packet);
+		    /* 5. Send packet */
+		    csp_send(conn, packet);
 
-		/* 6. Close connection */
-		csp_close(conn);
-#endif
+		    /* 6. Close connection */
+		    csp_close(conn);
+        }
 	}
     exit(0);
 	return;
@@ -164,7 +165,7 @@ int main(int argc, char * argv[]) {
 #endif
     const char * rtable = NULL;
     int opt;
-    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:hp:i:s:")) != -1) {
+    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:hp:i:s:fC")) != -1) {
         switch (opt) {
             case 'a':
                 address = atoi(optarg);
@@ -203,6 +204,12 @@ int main(int argc, char * argv[]) {
             case 's':
                 sendSize = atoi(optarg);
                 break;
+            case 'f':
+                fullSend = true;
+                break;
+            case 'C':
+                clientFlags |= CSP_O_CRC32;
+                break;
             default:
                 csp_print("Usage:\n"
                        " -a <address>     local CSP address\n"
@@ -215,6 +222,8 @@ int main(int argc, char * argv[]) {
                        " -p <portoffset>  value to add to 6000/7000\n"
                        " -i <iteration count>  number of times to send - default forever\n"
                        " -s <size of probes/ping> size of data sent\n"
+                       " -f full send of ping and Hello World data - otherwise just pings\n"
+                       " -C use csp crc\n"
                        " -t               enable test mode\n");
                 exit(1);
                 break;

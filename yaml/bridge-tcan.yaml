@@ -63,9 +63,9 @@
   driver: "tcan"
   addr: 16
   netmask: 5
-  listen_port: 10055
+  listen_port: 58204
   server: "127.0.0.1"
-  remote_port: 10003
+  remote_port: 58205
 
 - name: "ZMQ"
   driver: "zmq"

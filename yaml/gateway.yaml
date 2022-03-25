@@ -66,10 +66,12 @@
   device: 1
   server: "127.0.0.1"
   remote_port: 10003
+  listen_port: 10004
 
 - name: "ZMQ"
   driver: "zmq"
   server: "localhost"
   addr: 15
   netmask: 2
+  promisc: true
   default: true
