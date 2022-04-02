@@ -46,7 +46,7 @@
   driver: "udp"
   addr: 7
   netmask: 5
-  server: "192.168.0.102"
+  server: "bridge1"
   listen_port: 9700
   remote_port: 9600
 
