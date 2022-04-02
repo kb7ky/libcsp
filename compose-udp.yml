@@ -15,7 +15,7 @@ services:
       - udp1
   client1:
     image: csp-base-stdio:latest
-    command: /bin/bash
+    command: tail /dev/null
     networks:
       - udp1
   bridge1:
