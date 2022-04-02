@@ -4,6 +4,8 @@ services:
   broker1:
     image:  csp-base-stdio:latest
     command: /libcsp/build/examples/zmqproxy -v 1
+    logging:
+      driver: local
     ports:
       - 6000
     networks:
@@ -11,16 +13,22 @@ services:
   server1:
     image:  csp-base-stdio:latest
     command: /libcsp/build/examples/csp_server_client -a 1 -z broker1
+    logging:
+      driver: local
     networks:
       - udp1
   client1:
     image: csp-base-stdio:latest
-    command: tail /dev/null
+    command: tail -f /dev/null
+    logging:
+      driver: local
     networks:
       - udp1
   bridge1:
     image:  csp-base-stdio:latest
     command: /libcsp/build/examples/csp_bridge -h udpt1 -m 1 -r 1 -d -d -d -d
+    logging:
+      driver: local
     ports:
       - 9600:9600/udp
     networks:
