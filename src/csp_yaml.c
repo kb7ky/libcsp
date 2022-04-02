@@ -1,3 +1,8 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <string.h>
 
 #include <csp/csp_yaml.h>
 #include <csp/csp_iflist.h>
@@ -30,6 +35,24 @@ struct data_s {
 	char * remote_port;
 	char * promisc;
 };
+
+static int csp_yaml_getaddrinfo(char *fqdn, char *host, int hostsize) {
+    struct addrinfo hints;
+    struct addrinfo *res;
+
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_INET;
+
+    int ret = getaddrinfo(fqdn, NULL, &hints, &res);
+    if (ret != 0) {
+        csp_print("csp_yaml_getaddrinfo failed: %d\n", ret);
+        return(ret);
+    }
+    getnameinfo(res->ai_addr, res->ai_addrlen, host, hostsize, NULL, 0, NI_NUMERICHOST);
+	freeaddrinfo(res);
+
+	return 0;
+}
 
 static void csp_yaml_start_if(struct data_s * data) {
 	memset(data, 0, sizeof(struct data_s));
@@ -105,7 +128,13 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 
 		iface = calloc(1,sizeof(csp_iface_t));
 		csp_if_udp_conf_t * udp_conf = calloc(1,sizeof(csp_if_udp_conf_t));
-		udp_conf->host = data->server;
+		// udp_conf->host = data->server;
+		char addrBuffer[16]; // xxx.xxx.xxx.xxx\0
+		if((csp_yaml_getaddrinfo(data->server, addrBuffer, sizeof(addrBuffer))) != 0) {
+			csp_print("udp: unable to resolve server name\n");
+			exit(1);
+		}
+		udp_conf->host = strdup(addrBuffer);
 		udp_conf->lport = atoi(data->listen_port);
 		udp_conf->rport = atoi(data->remote_port);
 		csp_if_udp_init(iface, udp_conf);
@@ -123,12 +152,18 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 			return;
 		}
 
+		char addrBuffer[16]; // xxx.xxx.xxx.xxx\0
+		if((csp_yaml_getaddrinfo(data->server, addrBuffer, sizeof(addrBuffer))) != 0) {
+			csp_print("zmq: unable to resolve server name\n");
+			exit(1);
+		}
+
 		int promisc = 0;
 		if (data->promisc) {
 			promisc = (strcmp("true", data->promisc) == 0) ? 1 : 0;
 		}
 
-		csp_zmqhub_init_filter2(data->name, data->server, addr, atoi(data->netmask), promisc, 0, 0, &iface);
+		csp_zmqhub_init_filter2(data->name, &addrBuffer[0], addr, atoi(data->netmask), promisc, 0, 0, &iface);
 		// csp_zmqhub_init(addr, data->server, promisc, flags, portoffset, topiclen, &iface);
 
 	}
@@ -163,7 +198,12 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 		}
 
 		csp_can_tcpcan_conf_t  * tcpcan_conf = calloc(1,sizeof(csp_can_tcpcan_conf_t));
-		strncpy(tcpcan_conf->host, data->server, CSP_HOSTNAME_MAX);
+		char addrBuffer[16]; // xxx.xxx.xxx.xxx\0
+		if((csp_yaml_getaddrinfo(data->server, addrBuffer, sizeof(addrBuffer))) != 0) {
+			csp_print("tcpcan: unable to resolve server name\n");
+			exit(1);
+		}
+		strncpy(tcpcan_conf->host, &addrBuffer[0], CSP_HOSTNAME_MAX);
 		tcpcan_conf->tx_port = atoi(data->remote_port);
 		tcpcan_conf->rx_port = atoi(data->listen_port);
 
