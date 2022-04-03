@@ -68,7 +68,7 @@
 
 - name: "ZMQ"
   driver: "zmq"
-  server: "localhost"
+  server: "broker2"
   addr: 6
   netmask: 2
   promisc: true

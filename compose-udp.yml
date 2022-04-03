@@ -41,6 +41,7 @@ services:
       - 9600:9600/udp
     networks:
       - udp1
+      - udp2
   broker2:
     image:  csp-base-stdio:latest
     stdin_open: true
@@ -78,8 +79,9 @@ services:
     logging:
       driver: local
     ports:
-      - 9600:9600/udp
+      - 9700:9700/udp
     networks:
+      - udp1
       - udp2
 networks:
   udp1:
