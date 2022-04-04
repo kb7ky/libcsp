@@ -8,6 +8,9 @@ services:
     command: /libcsp/build/examples/zmqproxy -v 1
     logging:
       driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
     ports:
       - 6000
     networks:
@@ -19,6 +22,9 @@ services:
     command: /libcsp/build/examples/csp_server_client -a 1 -z broker1
     logging:
       driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
     networks:
       - udp1
   client1:
@@ -28,6 +34,9 @@ services:
     command: tail -f /dev/null
     logging:
       driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
     networks:
       - udp1
   bridge1:
@@ -37,6 +46,9 @@ services:
     command: /libcsp/build/examples/csp_bridge -h udpt1 -m 1 -r 1 -d -d -d -d
     logging:
       driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
     ports:
       - 9600:9600/udp
     networks:
@@ -49,6 +61,9 @@ services:
     command: /libcsp/build/examples/zmqproxy -v 1
     logging:
       driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
     ports:
       - 6000
     networks:
@@ -60,6 +75,9 @@ services:
     command: /libcsp/build/examples/csp_server_client -a 10 -z broker2
     logging:
       driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
     networks:
       - udp2
   client2:
@@ -69,6 +87,9 @@ services:
     command: tail -f /dev/null
     logging:
       driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
     networks:
       - udp2
   bridge2:
@@ -78,6 +99,9 @@ services:
     command: /libcsp/build/examples/csp_bridge -h udpt2 -m 1 -r 1 -d -d -d -d
     logging:
       driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
     ports:
       - 9700:9700/udp
     networks:
