@@ -72,7 +72,7 @@ services:
     image:  csp-base-stdio:latest
     stdin_open: true
     tty:  true
-    command: /libcsp/build/examples/csp_server_client -a 10 -z broker2
+    command: /libcsp/build/examples/csp_server_client -a 10 -z broker2 -q
     logging:
       driver: local
       options:
