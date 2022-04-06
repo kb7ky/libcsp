@@ -27,6 +27,7 @@ static int repeatCtr = -1;
 static int sendSize = 100;
 static bool fullSend = false;
 static int clientFlags = CSP_O_NONE;
+static int fastMode = 0;
 
 /* Server task - handles requests from clients */
 void server(void) {
@@ -97,7 +98,11 @@ void client(void) {
             }
         }
 
-		usleep(test_mode ? 200000 : 1000000);
+        if(fastMode != 0) {
+            usleep(fastMode);
+        } else {
+		    usleep(test_mode ? 200000 : 1000000);
+        }
 
 		/* Send ping to server, timeout 1000 mS, ping size 100 bytes */
 		int result = csp_ping(server_address, 1000, sendSize, clientFlags);
@@ -165,7 +170,7 @@ int main(int argc, char * argv[]) {
 #endif
     const char * rtable = NULL;
     int opt;
-    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:hp:i:s:fC")) != -1) {
+    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:hp:i:s:fCF:")) != -1) {
         switch (opt) {
             case 'a':
                 address = atoi(optarg);
@@ -210,6 +215,9 @@ int main(int argc, char * argv[]) {
             case 'C':
                 clientFlags |= CSP_O_CRC32;
                 break;
+            case 'F':
+                fastMode = atoi(optarg);
+                break;
             default:
                 csp_print("Usage:\n"
                        " -a <address>     local CSP address\n"
@@ -224,6 +232,7 @@ int main(int argc, char * argv[]) {
                        " -s <size of probes/ping> size of data sent\n"
                        " -f full send of ping and Hello World data - otherwise just pings\n"
                        " -C use csp crc\n"
+                       " -F <ms delay> between sends for client\n"
                        " -t               enable test mode\n");
                 exit(1);
                 break;
