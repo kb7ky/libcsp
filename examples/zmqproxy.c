@@ -11,6 +11,7 @@ int csp_id_setup_rx(csp_packet_t * packet);
 extern csp_conf_t csp_conf;
 
 int debug = 0;
+bool quietMode = false;
 const char * sub_str = "tcp://0.0.0.0:6000";
 const char * pub_str = "tcp://0.0.0.0:7000";
 char * logfile_name = NULL;
@@ -117,7 +118,7 @@ int main(int argc, char ** argv) {
 	csp_conf.version = 1;
 
 	int opt;
-	while ((opt = getopt(argc, argv, "dhv:s:p:f:t;")) != -1) {
+	while ((opt = getopt(argc, argv, "dhv:s:p:f:t:q")) != -1) {
 		switch (opt) {
 			case 'd':
 				debug = 1;
@@ -137,6 +138,9 @@ int main(int argc, char ** argv) {
 			case 't':
 				topiclen = atoi(optarg);
 				break;
+			case 'q':
+				quietMode = true;
+				break;
 			default:
 				csp_print(
 					"Usage:\n"
@@ -145,6 +149,7 @@ int main(int argc, char ** argv) {
 					" -s SUB_STR\tsubscriber port: tcp://localhost:7000\n"
 					" -p PUB_STR\tpublisher  port: tcp://localhost:6000\n"
 					" -t TOPICLEN\tTopicLength in front of csp packet (1 or 2). Only valid with version 1\n"
+					" -q quiet mode - no logging\n"
 					" -f LOGFILE\tLog to this file\n");
 				exit(1);
 				break;
@@ -166,8 +171,12 @@ int main(int argc, char ** argv) {
 	assert(ret == 0);
 	csp_print("Publisher task listening on %s\n", pub_str);
 
-	pthread_t capworker;
-	pthread_create(&capworker, NULL, task_capture, ctx);
+	if(quietMode) {
+		csp_print("Quiet Mode enabled - no logs\n");
+	} else {
+		pthread_t capworker;
+		pthread_create(&capworker, NULL, task_capture, ctx);
+	}
 
 	zmq_proxy(frontend, backend, NULL);
 
