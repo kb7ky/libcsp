@@ -28,6 +28,7 @@ static int sendSize = 100;
 static bool fullSend = false;
 static int clientFlags = CSP_O_NONE;
 static int fastMode = 0;
+static bool quietMode = false;
 
 /* Server task - handles requests from clients */
 void server(void) {
@@ -59,7 +60,9 @@ void server(void) {
 			switch (csp_conn_dport(conn)) {
 			case MY_SERVER_PORT:
 				/* Process packet here */
-				csp_print("Packet received on MY_SERVER_PORT: %s\n", (char *) packet->data);
+                if(!quietMode) {
+				    csp_print("Packet received on MY_SERVER_PORT: %s\n", (char *) packet->data);
+                }
 				csp_buffer_free(packet);
 				++server_received;
 				break;
@@ -106,13 +109,17 @@ void client(void) {
 
 		/* Send ping to server, timeout 1000 mS, ping size 100 bytes */
 		int result = csp_ping(server_address, 1000, sendSize, clientFlags);
-		csp_print("Ping address: %u, result %d [mS]\n", server_address, result);
+        if(!quietMode) {
+		    csp_print("Ping address: %u, result %d [mS]\n", server_address, result);
+        }
         (void) result;
 
         if(fullSend) {
     		/* Send reboot request to server, the server has no actual implementation of csp_sys_reboot() and fails to reboot */
 	    	csp_reboot(server_address);
-		    csp_print("reboot system request sent to address: %u\n", server_address);
+            if(!quietMode) {
+		        csp_print("reboot system request sent to address: %u\n", server_address);
+            }
 
 		    /* Send data packet (string) to server */
 
@@ -170,7 +177,7 @@ int main(int argc, char * argv[]) {
 #endif
     const char * rtable = NULL;
     int opt;
-    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:hp:i:s:fCF:")) != -1) {
+    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:hp:i:s:fCF:q")) != -1) {
         switch (opt) {
             case 'a':
                 address = atoi(optarg);
@@ -218,6 +225,9 @@ int main(int argc, char * argv[]) {
             case 'F':
                 fastMode = atoi(optarg);
                 break;
+            case 'q':
+                quietMode = true;
+                break;
             default:
                 csp_print("Usage:\n"
                        " -a <address>     local CSP address\n"
@@ -233,6 +243,7 @@ int main(int argc, char * argv[]) {
                        " -f full send of ping and Hello World data - otherwise just pings\n"
                        " -C use csp crc\n"
                        " -F <ms delay> between sends for client\n"
+                       " -q quiet mode (minimal printing after startup\n"
                        " -t               enable test mode\n");
                 exit(1);
                 break;
