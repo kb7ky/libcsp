@@ -342,9 +342,9 @@ int main(int argc, char * argv[]) {
 
     /* Wait for execution to end (ctrl+c) */
     while(1) {
-        sleep(3);
 
         if (test_mode) {
+            sleep(3);
             /* Test mode is intended for checking that host & client can exchange packets over loopback */
             if (server_received < 5) {
                 csp_print("Server received %u packets\n", server_received);
@@ -353,6 +353,8 @@ int main(int argc, char * argv[]) {
             csp_print("Server received %u packets\n", server_received);
             exit(0);
         }
+        sleep(60);
+        csp_iflist_print();
     }
 
     return 0;
