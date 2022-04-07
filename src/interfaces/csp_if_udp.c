@@ -20,6 +20,7 @@ static int csp_if_udp_tx(csp_iface_t * iface, uint16_t via, csp_packet_t * packe
 
 	int sockfd;
 	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+		iface->tx_error++;
 		return CSP_ERR_BUSY;
 	}
 
@@ -51,6 +52,7 @@ int csp_if_udp_rx_work(int sockfd, size_t mtu, csp_iface_t * iface) {
 
 	csp_packet_t * packet = csp_buffer_get(mtu);
 	if (packet == NULL) {
+		iface->drop++;
 		return CSP_ERR_NOMEM;
 	}
 
@@ -60,6 +62,7 @@ int csp_if_udp_rx_work(int sockfd, size_t mtu, csp_iface_t * iface) {
 	
 	if (received_len <= 4) {
 		csp_buffer_free(packet);
+		iface->rx_error++;
 		return CSP_ERR_NOMEM;
 	}
 
@@ -68,6 +71,7 @@ int csp_if_udp_rx_work(int sockfd, size_t mtu, csp_iface_t * iface) {
 	/* Parse the frame and strip the ID field */
 	if (csp_id_strip(packet) != 0) {
 		csp_buffer_free(packet);
+		iface->rx_error++;
 		return CSP_ERR_INVAL;
 	}
 

@@ -5,7 +5,7 @@ services:
     image:  csp-base-stdio:latest
     stdin_open: true
     tty:  true
-    command: /libcsp/build/examples/zmqproxy -v 1 -q
+    command: /libcsp/build/examples/zmqproxy -v 1
     logging:
       driver: local
       options:

@@ -127,6 +127,7 @@ void * csp_zmqhub_task(void * param) {
 		if (packet == NULL) {
 			csp_print("RX %s: Failed to get csp_buffer(%u) errno(%d)\n", drv->iface.name, datalen, csp_dbg_errno);
 			zmq_msg_close(&msg);
+			drv->iface.drop++;
 			continue;
 		}
 

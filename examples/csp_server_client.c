@@ -106,6 +106,8 @@ void client(void) {
 
         if(fastMode == 0) {
 		    usleep(test_mode ? 200000 : 1000000);
+        } else {
+            usleep(fastMode);
         }
 
         if(pingSend) {
