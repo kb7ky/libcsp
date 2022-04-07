@@ -91,6 +91,7 @@ int main(int argc, char * argv[]) {
     while(1) {
         sleep(60);
         csp_iflist_print();
+        csp_iflist_reset();
     }
 
     return 0;

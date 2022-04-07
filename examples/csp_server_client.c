@@ -358,6 +358,7 @@ int main(int argc, char * argv[]) {
         sleep(60);
         if(serverMode) {
             csp_iflist_print();
+            csp_iflist_reset();
         }
     }
 

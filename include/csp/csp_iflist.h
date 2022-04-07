@@ -22,6 +22,8 @@ unsigned long csp_bytesize(unsigned long bytes, char *postfix);
 
 #if (CSP_ENABLE_CSP_PRINT)
 void csp_iflist_print(void);
+void csp_iflist_reset(void);
 #else
 inline void csp_iflist_print(void) {}
+inline void csp_iflist_reset(void) {}
 #endif

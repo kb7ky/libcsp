@@ -40,7 +40,7 @@ services:
     networks:
       - udp1
   bridge1:
-    image:  csp-base-none:latest
+    image:  csp-base-stdio:latest
     stdin_open: true
     tty:  true
     command: /libcsp/build/examples/csp_bridge -h udpt1 -m 1 -r 1
@@ -93,7 +93,7 @@ services:
     networks:
       - udp2
   bridge2:
-    image:  csp-base-none:latest
+    image:  csp-base-stdio:latest
     stdin_open: true
     tty:  true
     command: /libcsp/build/examples/csp_bridge -h udpt2 -m 1 -r 1

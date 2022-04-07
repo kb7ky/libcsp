@@ -150,4 +150,10 @@ void csp_iflist_print(void) {
 	}
 }
 
+void csp_iflist_reset(void) {
+	csp_iface_t * i = interfaces;
+	while (i) {
+		i->tx = i->rx = i->tx_error = i->rx_error = i-> drop = i->autherr = i->txbytes = i->rxbytes = 0;
+	}
+}
 #endif
