@@ -31,6 +31,7 @@ static int fastMode = 0;
 static bool quietMode = false;
 static bool pingSend = true;
 static bool rebootSend = false;
+static bool serverMode = false;
 
 /* Server task - handles requests from clients */
 void server(void) {
@@ -331,6 +332,7 @@ int main(int argc, char * argv[]) {
     /* Start server thread */
     if ((server_address == 255) ||  /* no server address specified, I must be server */
         (default_iface == NULL)) {  /* no interfaces specified -> run server & client via loopback */
+        serverMode = true;
         server_start();
     }
 
@@ -354,7 +356,9 @@ int main(int argc, char * argv[]) {
             exit(0);
         }
         sleep(60);
-        csp_iflist_print();
+        if(serverMode) {
+            csp_iflist_print();
+        }
     }
 
     return 0;
