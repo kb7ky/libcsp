@@ -29,6 +29,8 @@ static bool fullSend = false;
 static int clientFlags = CSP_O_NONE;
 static int fastMode = 0;
 static bool quietMode = false;
+static bool pingSend = true;
+static bool rebootSend = false;
 
 /* Server task - handles requests from clients */
 void server(void) {
@@ -101,28 +103,29 @@ void client(void) {
             }
         }
 
-        if(fastMode != 0) {
-            usleep(fastMode);
-        } else {
+        if(fastMode == 0) {
 		    usleep(test_mode ? 200000 : 1000000);
         }
 
-		/* Send ping to server, timeout 1000 mS, ping size 100 bytes */
-		int result = csp_ping(server_address, 1000, sendSize, clientFlags);
-        if(!quietMode) {
-		    csp_print("Ping address: %u, result %d [mS]\n", server_address, result);
+        if(pingSend) {
+            /* Send ping to server, timeout 1000 mS, ping size 100 bytes */
+            int result = csp_ping(server_address, 1000, sendSize, clientFlags);
+            if(!quietMode) {
+                csp_print("Ping address: %u, result %d [mS]\n", server_address, result);
+            }
+            (void) result;
         }
-        (void) result;
 
-        if(fullSend) {
+        if(rebootSend) {
     		/* Send reboot request to server, the server has no actual implementation of csp_sys_reboot() and fails to reboot */
 	    	csp_reboot(server_address);
             if(!quietMode) {
 		        csp_print("reboot system request sent to address: %u\n", server_address);
             }
+        }
 
+        if(fullSend) {
 		    /* Send data packet (string) to server */
-
 		    /* 1. Connect to host on 'server_address', port MY_SERVER_PORT with regular UDP-like protocol and 1000 ms timeout */
 		    csp_conn_t * conn = csp_connect(CSP_PRIO_NORM, server_address, MY_SERVER_PORT, 1000, clientFlags);
 		    if (conn == NULL) {
@@ -179,7 +182,7 @@ int main(int argc, char * argv[]) {
 #endif
     const char * rtable = NULL;
     int opt;
-    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:hp:i:s:fCF:q")) != -1) {
+    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:hp:i:s:fCF:qS")) != -1) {
         switch (opt) {
             case 'a':
                 address = atoi(optarg);
@@ -230,6 +233,10 @@ int main(int argc, char * argv[]) {
             case 'q':
                 quietMode = true;
                 break;
+            case 'S':
+                pingSend = false;
+                rebootSend = false;
+                break;
             default:
                 csp_print("Usage:\n"
                        " -a <address>     local CSP address\n"
@@ -246,6 +253,7 @@ int main(int argc, char * argv[]) {
                        " -C use csp crc\n"
                        " -F <ms delay> between sends for client\n"
                        " -q quiet mode (minimal printing after startup\n"
+                       " -S speed testing - turn off ping and reboot messages\n"
                        " -t               enable test mode\n");
                 exit(1);
                 break;
