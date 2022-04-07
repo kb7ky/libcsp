@@ -159,6 +159,8 @@ void client(void) {
 		    csp_close(conn);
         }
 	}
+    csp_iflist_print();
+
     exit(0);
 	return;
 }
