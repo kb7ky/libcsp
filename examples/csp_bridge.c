@@ -110,7 +110,8 @@ int main(int argc, char * argv[]) {
 
     /* Wait for execution to end (ctrl+c) */
     while(1) {
-        sleep(3);
+        sleep(60);
+        csp_iflist_print();
     }
 
     return 0;

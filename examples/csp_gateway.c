@@ -17,17 +17,20 @@ extern csp_conf_t csp_conf;
 char hostname[CSP_MAX_STRING];
 char model[CSP_MAX_STRING];
 char revision[CSP_MAX_STRING];
-char yamlfn[CSP_MAX_STRING + 10];
+char yamlfn[CSP_MAX_STRING * 3];
 
 /* forward Decls */
 int gateway_start(void);
 
-/* main - initialization of CSP and start of bridge tasks */
+/* main - initialization of CSP and start of gateway tasks */
 int main(int argc, char * argv[]) {
 
     int opt;
+    char defaultYamlPath[] = ".";
+    char yamlBuffer[CSP_MAX_STRING + 1];
+    char * yamlpathPtr = &defaultYamlPath[0];
 
-    while ((opt = getopt(argc, argv, "h:dm:r:v:")) != -1) {
+    while ((opt = getopt(argc, argv, "h:dm:r:v:p:")) != -1) {
         switch (opt) {
 			case 'd':
 				csp_dbg_packet_print++;
@@ -47,12 +50,17 @@ int main(int argc, char * argv[]) {
             case 'v':
                 csp_conf.version = atoi(optarg);
                 break;
+            case 'p':
+                strncpy(yamlBuffer, optarg, CSP_MAX_STRING);
+                yamlpathPtr = yamlBuffer;
+                break;
             default:
                 csp_print("Usage:\n"
                        " -d increment packet debug level\n"
                        " -h <hostname> also used to open <hostname>.yaml\n"
                        " -m <model\n"
                        " -r <revision\n"
+                       " -p path to directory holding yaml file\n"
                        " -v <csp version (1/2)\n"
             		);
                 exit(1);
@@ -64,14 +72,14 @@ int main(int argc, char * argv[]) {
         csp_print("Missing Hostname - can't open yaml file\n");
         exit(1);
     }
-    snprintf(yamlfn, CSP_MAX_STRING + 10, "yaml/%s.yaml", hostname);
+    snprintf(yamlfn, CSP_MAX_STRING * 3, "%s/yaml/%s.yaml", yamlpathPtr, hostname);
 
     csp_print("Initializing CSP Gateway\n");
 
     /* Init CSP */
     csp_init();
     csp_yaml_init(yamlfn,NULL);
-    csp_print("CSP Bridge - v %d %s %s %s\n",csp_conf.version, csp_conf.hostname, csp_conf.model, csp_conf.revision);
+    csp_print("CSP Gateway - v %d %s %s %s\n",csp_conf.version, csp_conf.hostname, csp_conf.model, csp_conf.revision);
 
     /* Start router */
     gateway_start();
@@ -81,7 +89,8 @@ int main(int argc, char * argv[]) {
 
     /* Wait for execution to end (ctrl+c) */
     while(1) {
-        sleep(3);
+        sleep(60);
+        csp_iflist_print();
     }
 
     return 0;

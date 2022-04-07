@@ -51,6 +51,10 @@ void csp_bridge_work(void) {
 		destif = bif_a;
 	}
 
+	/* update iface stats */
+	input.iface->rx++;
+	destif->tx++;
+
 	/* Send to the interface directly, no hassle */
 	csp_send_direct_iface(packet->id, packet, destif, CSP_NO_VIA_ADDRESS, 0);
 	
