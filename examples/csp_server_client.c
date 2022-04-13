@@ -7,6 +7,7 @@
 #include <csp/drivers/usart.h>
 #include <csp/drivers/can_socketcan.h>
 #include <csp/interfaces/csp_if_zmqhub.h>
+#include <csp/interfaces/csp_if_lo.h>
 
 
 /* These three functions must be provided in arch specific way */
@@ -265,6 +266,8 @@ int main(int argc, char * argv[]) {
 
     csp_print("Initialising CSP");
 
+    /* set the lo address before calling csp_init() */
+    csp_if_lo.addr = address;
     /* Init CSP */
     csp_init();
 
