@@ -268,6 +268,7 @@ int main(int argc, char * argv[]) {
 
     /* set the lo address before calling csp_init() */
     csp_if_lo.addr = address;
+
     /* Init CSP */
     csp_init();
 
@@ -344,6 +345,8 @@ int main(int argc, char * argv[]) {
     /* Start client thread */
     if ((server_address != 255) ||  /* server address specified, I must be client */
         (default_iface == NULL)) {  /* no interfaces specified -> run server & client via loopback */
+        serverMode = true;
+        server_start();
         client_start();
     }
 
