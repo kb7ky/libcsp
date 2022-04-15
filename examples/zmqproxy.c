@@ -169,6 +169,15 @@ int main(int argc, char ** argv) {
 	assert(backend);
     ret = zmq_bind(backend, pub_str);
 	assert(ret == 0);
+
+	/* setup HEARTBEAT on the connections */
+	int hb_interval = 2000;
+	int hb_timeout = 5000;
+	int hb_remote_ttl = 7000;
+	assert(zmq_setsockopt(backend, ZMQ_HEARTBEAT_IVL, &hb_interval, sizeof(int)) == 0);
+	assert(zmq_setsockopt(backend, ZMQ_HEARTBEAT_TIMEOUT, &hb_timeout, sizeof(int)) == 0);
+	assert(zmq_setsockopt(backend, ZMQ_HEARTBEAT_TTL, &hb_remote_ttl, sizeof(int)) == 0);
+
 	csp_print("Publisher task listening on %s\n", pub_str);
 
 	if(quietMode) {

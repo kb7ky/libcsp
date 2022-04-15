@@ -279,6 +279,14 @@ int csp_zmqhub_init_w_name_endpoints_rxfilter(const uint16_t addr,
 	ret = zmq_setsockopt(drv->subscriber, ZMQ_SUBSCRIBE, NULL, 0);
 	assert(ret == 0);
 
+	/* setup HEARTBEAT on the connections */
+	int hb_interval = 2000;
+	int hb_timeout = 5000;
+	int hb_remote_ttl = 7000;
+	assert(zmq_setsockopt(drv->publisher, ZMQ_HEARTBEAT_IVL, &hb_interval, sizeof(int)) == 0);
+	assert(zmq_setsockopt(drv->publisher, ZMQ_HEARTBEAT_TIMEOUT, &hb_timeout, sizeof(int)) == 0);
+	assert(zmq_setsockopt(drv->publisher, ZMQ_HEARTBEAT_TTL, &hb_remote_ttl, sizeof(int)) == 0);
+
 	/* Connect to server */
 	ret = zmq_connect(drv->publisher, publish_endpoint);
 	assert(ret == 0);
