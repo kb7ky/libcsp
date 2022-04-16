@@ -167,8 +167,6 @@ int main(int argc, char ** argv) {
 
 	void * backend = zmq_socket(ctx, ZMQ_XPUB);
 	assert(backend);
-    ret = zmq_bind(backend, pub_str);
-	assert(ret == 0);
 
 	/* setup HEARTBEAT on the connections */
 	int hb_interval = 2000;
@@ -177,6 +175,10 @@ int main(int argc, char ** argv) {
 	assert(zmq_setsockopt(backend, ZMQ_HEARTBEAT_IVL, &hb_interval, sizeof(int)) == 0);
 	assert(zmq_setsockopt(backend, ZMQ_HEARTBEAT_TIMEOUT, &hb_timeout, sizeof(int)) == 0);
 	assert(zmq_setsockopt(backend, ZMQ_HEARTBEAT_TTL, &hb_remote_ttl, sizeof(int)) == 0);
+
+    ret = zmq_bind(backend, pub_str);
+	assert(ret == 0);
+
 
 	csp_print("Publisher task listening on %s\n", pub_str);
 
