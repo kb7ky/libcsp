@@ -7,9 +7,9 @@ services:
     tty:  true
     command: /libcsp/build/examples/zmqproxy -v 1
     logging:
-      driver: local
+      driver: syslog
       options:
-        max-file: "5"
+        syslog-address: udp:syslog-ng:514
         max-size: "10m"
     ports:
       - 6000
@@ -104,6 +104,24 @@ services:
         max-size: "10m"
     ports:
       - 9700:9700/udp
+    networks:
+      - udp1
+      - udp2
+  syslog-ng:
+    image: lscr.io/linuxserver/syslog-ng
+    container_name: syslog-ng
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=GMT
+    volumes:
+      - /path/to/config:syslog-ng/config
+      - /path/to/log:syslog-ng/logs
+    ports:
+      - 514:5514/udp
+      - 601:6601/tcp
+      - 6514:6514/tcp
+    restart: unless-stopped
     networks:
       - udp1
       - udp2
