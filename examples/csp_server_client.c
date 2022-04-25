@@ -248,7 +248,7 @@ int main(int argc, char * argv[]) {
 #endif
     const char * rtable = NULL;
     int opt;
-    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:hp:i:s:fCF:qSm:")) != -1) {
+    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:hp:i:s:fCF:qSm:y")) != -1) {
         switch (opt) {
             case 'a':
                 address = atoi(optarg);
@@ -306,6 +306,9 @@ int main(int argc, char * argv[]) {
             case 'm':
                 mtu = atoi(optarg);
                 break;
+            case 'y':
+                clientFlags |= CSP_O_RDP;
+               break;
             default:
                 csp_print("Usage:\n"
                        " -a <address>     local CSP address\n"
@@ -324,6 +327,7 @@ int main(int argc, char * argv[]) {
                        " -q quiet mode (minimal printing after startup\n"
                        " -S speed testing - turn off ping and reboot messages\n"
                        " -m <mtu> - use SFP protocol with MTU sized fragments\n"
+                       " -y use rdp to ACK packets\n"
                        " -t               enable test mode\n");
                 exit(1);
                 break;
