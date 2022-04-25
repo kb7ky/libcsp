@@ -1,0 +1,6 @@
+config/custom*
+config/log
+*.ctl
+*.persist
+logs
+
