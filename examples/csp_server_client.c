@@ -70,7 +70,8 @@ void server(void) {
 			switch (csp_conn_dport(conn)) {
 			case MY_SERVER_PORT:
                 /* read packet here */
-                more = ((packet = csp_read(conn, 50)) != NULL);
+                packet = csp_read(conn, 50);
+                more = false;
 
 				/* Process packet here */
                 if(!quietMode) {
