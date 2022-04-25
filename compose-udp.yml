@@ -22,7 +22,7 @@ services:
     image:  csp-base-stdio:latest
     stdin_open: true
     tty:  true
-    command: /libcsp/build/examples/csp_server_client -a 1 -z broker1
+    command: tail -f /dev/null # /libcsp/build/examples/csp_server_client -a 1 -z broker1
     logging:
       driver: local
       options:

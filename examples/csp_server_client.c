@@ -99,7 +99,8 @@ void server(void) {
 
 			default:
 	            /* read packet here */
-                more = ((packet = csp_read(conn, 50)) != NULL);
+                packet = csp_read(conn, 50);
+                more = false;
 
 			    /* Call the default CSP service handler, handle pings, buffer use, etc. */
 				csp_service_handler(packet);
