@@ -26,7 +26,7 @@ class CSP(object):
     def __str__(self):
         return ("""v1: Pri: {} Src: {} Dst: {} Dport: {} Sport: {} Flags: {}""".format(
             self.priority, self.source, self.destination, self.dest_port,
-            self.source_port))
+            self.source_port, self.flags))
 
 if __name__ == "__main__":
 
@@ -42,14 +42,14 @@ if __name__ == "__main__":
     socket.setsockopt(zmq.SUBSCRIBE, b'')
 
     # Process 5 updates
-    total_value = 0
+    update_nbr = 0
     for update_nbr in range (500):
         string = socket.recv()
-        if topiclen > 0:
-            print ("Topic:", string[:topiclen])
-            csp = CSP(string[topiclen:4 + topiclen],1)
+        if options.topiclen > 0:
+            print ("Topic:", string[:options.topiclen])
+            csp = CSP(string[options.topiclen:4 + options.topiclen],1)
         else:
             csp = CSP(string[:4],1)
-
-       print (csp)
+        print (csp)
+        update_nbr = update_nbr + 1
 

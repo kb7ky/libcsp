@@ -3,14 +3,17 @@ version:  "3"
 services:
   broker1:
     image:  csp-base-stdio:latest
-    stdin_open: true
-    tty:  true
     command: /libcsp/build/examples/zmqproxy -v 1
+    depends_on: 
+      - syslog-ng
     logging:
       driver: syslog
       options:
-        syslog-address: udp:syslog-ng:514
-        max-size: "10m"
+        syslog-address: tcp://192.168.0.102:5514
+        syslog-facility: syslog
+        syslog-format: rfc3164
+        tag: broker1
+        mode: non-blocking
     ports:
       - 6000
     networks:
@@ -111,21 +114,19 @@ services:
     image: lscr.io/linuxserver/syslog-ng
     container_name: syslog-ng
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=0
+      - PGID=0
       - TZ=GMT
     volumes:
-      - /path/to/config:syslog-ng/config
-      - /path/to/log:syslog-ng/logs
-    ports:
-      - 514:5514/udp
-      - 601:6601/tcp
-      - 6514:6514/tcp
+      - ./syslog-ng/config:/config
+      - ./syslog-ng/logs:/var/log/syslog-ng
     restart: unless-stopped
+    ports:
+      - 5514:5514/udp
+      - 5514:5514/tcp
     networks:
-      - udp1
-      - udp2
+      - syslog-ng
 networks:
   udp1:
   udp2:
-
+  syslog-ng:

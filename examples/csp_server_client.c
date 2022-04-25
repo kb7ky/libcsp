@@ -17,6 +17,7 @@ int client_start(void);
 
 /* Server port, the port the server listens on for incoming connections from the client. */
 #define MY_SERVER_PORT		10
+#define MY_SFP_SERVER_PORT  11
 
 /* Commandline options */
 static uint8_t server_address = 255;
@@ -24,6 +25,7 @@ static uint8_t server_address = 255;
 /* test mode, used for verifying that host & client can exchange packets over the loopback interface */
 static bool test_mode = false;
 static unsigned int server_received = 0;
+static unsigned int sfp_server_received = 0;
 static int repeatCtr = -1;
 static int sendSize = 100;
 static bool fullSend = false;
@@ -33,6 +35,7 @@ static bool quietMode = false;
 static bool pingSend = true;
 static bool rebootSend = false;
 static bool serverMode = false;
+static int mtu = -1;
 
 /* Server task - handles requests from clients */
 void server(void) {
@@ -60,19 +63,45 @@ void server(void) {
 
 		/* Read packets on connection, timout is 100 mS */
 		csp_packet_t *packet;
-		while ((packet = csp_read(conn, 50)) != NULL) {
+        char *databuffer;
+        int datasize = 0;
+        bool more = true;
+		while (more) {
 			switch (csp_conn_dport(conn)) {
 			case MY_SERVER_PORT:
+                /* read packet here */
+                more = ((packet = csp_read(conn, 50)) != NULL);
+
 				/* Process packet here */
                 if(!quietMode) {
-				    csp_print("Packet received on MY_SERVER_PORT: %s\n", (char *) packet->data);
+				    csp_print("Normal Packet received on MY_SERVER_PORT: %s\n", (char *) packet->data);
                 }
 				csp_buffer_free(packet);
 				++server_received;
 				break;
 
+			case MY_SFP_SERVER_PORT:
+                /* read packet here */
+                if(csp_sfp_recv(conn, (void **)&databuffer, &datasize, 50) != CSP_ERR_NONE) {
+                    csp_print("Error reading SFP data\n");
+                    more = false;
+                    continue;
+                }
+
+				/* Process packet here */
+                if(!quietMode) {
+				    csp_print("SFP Packet received on MY_SFP_SERVER_PORT: size = %d\n", datasize);
+                }
+				free(databuffer);
+				++sfp_server_received;
+                more = false;
+				break;
+
 			default:
-				/* Call the default CSP service handler, handle pings, buffer use, etc. */
+	            /* read packet here */
+                more = ((packet = csp_read(conn, 50)) != NULL);
+
+			    /* Call the default CSP service handler, handle pings, buffer use, etc. */
 				csp_service_handler(packet);
 				break;
 			}
@@ -165,6 +194,37 @@ void client(void) {
 		    /* 6. Close connection */
 		    csp_close(conn);
         }
+
+        if(mtu != -1) {
+		    /* Send data packet using SFP to server */
+		    /* 1. Connect to host on 'server_address', port MY_SERVER_PORT with regular UDP-like protocol and 1000 ms timeout */
+		    csp_conn_t * conn = csp_connect(CSP_PRIO_NORM, server_address, MY_SFP_SERVER_PORT, 1000, clientFlags);
+		    if (conn == NULL) {
+			    /* Connect failed */
+			    csp_print("Connection failed\n");
+			    return;
+		    }
+
+		    /* 2. Get packet buffer for message/data */
+		    char * databuffer;
+            int datasize = mtu * 4;
+            databuffer = calloc(1, datasize);
+            if(databuffer == NULL) {
+			    /* Could not get buffer for SFP */
+			    csp_print("Failed to get SFP buffer\n");
+			    return;
+		    }
+
+		    /* 3. Copy data to packet */
+
+		    /* 4. Set packet length */
+
+		    /* 5. Send packet */
+		    csp_sfp_send(conn, databuffer, datasize, mtu,50);
+
+		    /* 6. Close connection */
+		    csp_close(conn);
+        }
 	}
     csp_iflist_print();
 
@@ -186,7 +246,7 @@ int main(int argc, char * argv[]) {
 #endif
     const char * rtable = NULL;
     int opt;
-    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:hp:i:s:fCF:qS")) != -1) {
+    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:hp:i:s:fCF:qSm:")) != -1) {
         switch (opt) {
             case 'a':
                 address = atoi(optarg);
@@ -241,6 +301,9 @@ int main(int argc, char * argv[]) {
                 pingSend = false;
                 rebootSend = false;
                 break;
+            case 'm':
+                mtu = atoi(optarg);
+                break;
             default:
                 csp_print("Usage:\n"
                        " -a <address>     local CSP address\n"
@@ -258,6 +321,7 @@ int main(int argc, char * argv[]) {
                        " -F <ms delay> between sends for client\n"
                        " -q quiet mode (minimal printing after startup\n"
                        " -S speed testing - turn off ping and reboot messages\n"
+                       " -m <mtu> - use SFP protocol with MTU sized fragments\n"
                        " -t               enable test mode\n");
                 exit(1);
                 break;
