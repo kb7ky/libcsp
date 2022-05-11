@@ -17,6 +17,7 @@
 #include <csp/drivers/can_socketcan.h>
 #include <csp/drivers/can_tcpcan.h>
 #include <csp/drivers/usart.h>
+#include <csp/drivers/tcp_kiss.h>
 #include <csp/csp_debug.h>
 #include <yaml.h>
 
@@ -78,7 +79,7 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 		}
 	}
 
-	/* UART */
+	/* KISS/UART */
     if (strcmp(data->driver, "kiss") == 0) {
 
 		/* Check for valid options */
@@ -101,6 +102,33 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 		}
 
 	}
+
+	/* KISS/TCP */
+    if (strcmp(data->driver, "tcp") == 0) {
+
+		if (!data->server || !data->remote_port) {
+			csp_print("server or remote_port missing\n");
+			return;
+		}
+
+		iface = calloc(1,sizeof(csp_iface_t));
+		csp_tcp_conf_t * tcp_conf = calloc(1,sizeof(csp_tcp_conf_t));
+		char addrBuffer[16]; // xxx.xxx.xxx.xxx\0
+		if((csp_yaml_getaddrinfo(data->server, addrBuffer, sizeof(addrBuffer))) != 0) {
+			csp_print("tcp: unable to resolve server name\n");
+			exit(1);
+		}
+		tcp_conf->host = strdup(addrBuffer);
+		tcp_conf->port = atoi(data->remote_port);
+		tcp_conf->listen = (data->listen_port != 0);
+
+		int error = csp_tcp_open_and_add_kiss_interface(tcp_conf, data->name, &iface);
+		if (error != CSP_ERR_NONE) {
+			return;
+		}
+
+	}
+
 #if CSP_HAVE_IFTUN
 	else if (strcmp(data->driver, "tun") == 0) {
 

@@ -1,0 +1,110 @@
+version:  "3"
+
+services:
+  broker1:
+    image:  csp-base-stdio:latest
+    command: /libcsp/build/examples/zmqproxy -v 1
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - 6000
+    networks:
+      - tcp1
+  server1:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: /libcsp/build/examples/csp_server_client -a 1 -z broker1
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    networks:
+      - tcp1
+  client1:
+    image: csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: tail -f /dev/null
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    networks:
+      - tcp1
+  bridge1:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: tail -f /dev/null # /libcsp/build/examples/csp_bridge -h udpt1 -m 1 -r 1 -d -d -d -d
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - 9600:9600/udp
+    networks:
+      - tcp1
+      - tcp2
+  broker2:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: /libcsp/build/examples/zmqproxy -v 1
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - 6000
+    networks:
+      - tcp2
+  server2:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: /libcsp/build/examples/csp_server_client -a 10 -z broker2 -q
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    networks:
+      - tcp2
+  client2:
+    image: csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: tail -f /dev/null
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    networks:
+      - tcp2
+  bridge2:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: tail -f /dev/null # /libcsp/build/examples/csp_bridge -h udpt2 -m 1 -r 1 -d -d -d -d
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - 9700:9700
+    networks:
+      - tcp1
+      - tcp2
+networks:
+  tcp1:
+  tcp2:

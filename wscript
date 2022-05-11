@@ -47,6 +47,7 @@ def options(ctx):
     gr.add_option('--enable-can-tcpcan', action='store_true', help='Enable Linux tcpcan driver')
     gr.add_option('--with-driver-usart', default=None, metavar='DRIVER', help='Build USART driver. [linux, None]')
     gr.add_option('--enable-if-tun', action='store_true', help='Enable TUN interface')
+    gr.add_option('--with-driver-tcp', default=None, metavar='DRIVER', help='Enable TCP/KISS interface')
 
     # OS
     gr.add_option('--with-os', metavar='OS', default='posix', help='Set operating system. Must be one of: ' + str(valid_os))
@@ -169,6 +170,13 @@ def configure(ctx):
     if ctx.options.enable_if_tun:
         ctx.define('CSP_HAVE_IFTUN', True)
         ctx.env.append_unique('FILES_CSP', ['src/interfaces/csp_if_tun.c'])
+
+    # Add if TCP/KISS
+    if ctx.options.with_driver_tcp:
+        ctx.define('CSP_HAVE_TCPKISS', True)
+        ctx.env.append_unique('FILES_CSP', ['src/drivers/tcp/tcp_kiss.c',
+                                            'src/drivers/tcp/tcp_{0}.c'.format(ctx.options.with_driver_tcp)])
+
 
    # Store configuration options
     ctx.env.ENABLE_EXAMPLES = ctx.options.enable_examples
