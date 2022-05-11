@@ -48,7 +48,7 @@ services:
         max-file: "5"
         max-size: "10m"
     ports:
-      - 9600:9600/udp
+      - 9600:9600
     networks:
       - tcp1
       - tcp2

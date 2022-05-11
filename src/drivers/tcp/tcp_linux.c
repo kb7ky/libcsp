@@ -140,7 +140,7 @@ int csp_tcp_open(const csp_tcp_conf_t * conf, csp_tcp_callback_t rx_callback, vo
 			free(ctx);
 			return CSP_ERR_INVAL;
 		}
-		addr.sin_addr.s_addr = htonl(remote.s_addr);
+		addr.sin_addr.s_addr = remote.s_addr;
 		if (csp_dbg_packet_print >= 1)	{
 			csp_print("%s[%s]: connecting to %s\n",__FUNCTION__, conf->host, conf->host);
 		}
