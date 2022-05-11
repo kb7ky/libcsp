@@ -46,7 +46,7 @@
   driver: "tcp"
   addr: 7
   netmask: 5
-  server: "localhost"
+  server: "bridge2"
   remote_port: 9700
 
 # - name: "UDP"
