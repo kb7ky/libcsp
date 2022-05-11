@@ -69,6 +69,7 @@ int csp_tcp_open(const csp_tcp_conf_t * conf, csp_tcp_callback_t rx_callback, vo
 	int retVal = 0;
 	int optval = 0;
 
+	csp_print("%s[%s]: initializing...\n", __FUNCTION__, conf->host);
 
 	tcp_context_t * ctx = calloc(1, sizeof(*ctx));
 	if (ctx == NULL) {
@@ -117,6 +118,9 @@ int csp_tcp_open(const csp_tcp_conf_t * conf, csp_tcp_callback_t rx_callback, vo
 			free(ctx);
 			return CSP_ERR_INVAL;
 		}
+		if (csp_dbg_packet_print >= 1)	{
+			csp_print("%s[%s]: waiting to accept\n",__FUNCTION__, conf->host);
+		}
 		if(((newS = accept(ctx->socket, (struct sockaddr *)(&clientaddr), &clientaddrlen))) < 0) {
 			csp_print("%s[%s]: failed to accept\n", __FUNCTION__, conf->host, strerror(errno));
 			close(ctx->socket);
@@ -125,6 +129,9 @@ int csp_tcp_open(const csp_tcp_conf_t * conf, csp_tcp_callback_t rx_callback, vo
 		}
 		close(ctx->socket);
 		ctx->socket = newS;
+		if (csp_dbg_packet_print >= 1)	{
+			csp_print("%s[%s]: accept complete\n",__FUNCTION__, conf->host);
+		}
 	} else {
 		struct in_addr remote;
 		if (inet_aton(conf->host, &remote) == 0) {
@@ -134,6 +141,9 @@ int csp_tcp_open(const csp_tcp_conf_t * conf, csp_tcp_callback_t rx_callback, vo
 			return CSP_ERR_INVAL;
 		}
 		addr.sin_addr.s_addr = htonl(remote.s_addr);
+		if (csp_dbg_packet_print >= 1)	{
+			csp_print("%s[%s]: connecting to %s\n",__FUNCTION__, conf->host, conf->host);
+		}
 		if(connect(ctx->socket, (struct sockaddr *)(&addr), sizeof(addr)) < 0) {
 			csp_print("%s[%s]: failed to connect\n", __FUNCTION__, conf->host, strerror(errno));
 			close(ctx->socket);
