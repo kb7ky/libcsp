@@ -69,6 +69,7 @@ int csp_tcp_open(const csp_tcp_conf_t * conf, csp_tcp_callback_t rx_callback, vo
 	int retVal = 0;
 	int optval = 0;
 
+
 	tcp_context_t * ctx = calloc(1, sizeof(*ctx));
 	if (ctx == NULL) {
 		csp_print("%s: Error allocating context, host: [%s], errno: %s\n", __FUNCTION__, conf->host, strerror(errno));
@@ -81,29 +82,67 @@ int csp_tcp_open(const csp_tcp_conf_t * conf, csp_tcp_callback_t rx_callback, vo
 	if ((ctx->socket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		csp_print("%s[%s]: socket() failed, error: %s\n", __FUNCTION__, conf->host, strerror(errno));
 		ctx->socket = -1;
+		free(ctx);
 		return CSP_ERR_INVAL;
 	}
 	// Enable keepalive packets
 	retVal = setsockopt(ctx->socket, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval));
 	if(retVal < 0){
 		csp_print("%s[%s]: error using setsockopt (SOL_SOCKET, SO_KEEPALIVE) %s", __FUNCTION__, conf->host, strerror(errno));
+		close(ctx->socket);
+		free(ctx);
 		return CSP_ERR_INVAL;
 	}
 
 	struct sockaddr_in addr;
+	struct sockaddr_in clientaddr;
+	int newS = -1;
+	socklen_t clientaddrlen = 0;
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(conf->port);
 
 	if(conf->listen) {
+		// XXX - testing ONLY! will accept one connection!
 		addr.sin_addr.s_addr = htonl(INADDR_ANY);
+		if((bind(ctx->socket, (struct sockaddr *)(&addr), sizeof(addr))) != 0) {
+			csp_print("%s[%s]: failed to bind\n", __FUNCTION__, conf->host, strerror(errno));
+			close(ctx->socket);
+			free(ctx);
+			return CSP_ERR_INVAL;
+		}
+		if((listen(ctx->socket, 1)) != 0) {
+			csp_print("%s[%s]: failed to listen\n", __FUNCTION__, conf->host, strerror(errno));
+			close(ctx->socket);
+			free(ctx);
+			return CSP_ERR_INVAL;
+		}
+		if(((newS = accept(ctx->socket, (struct sockaddr *)(&clientaddr), &clientaddrlen))) < 0) {
+			csp_print("%s[%s]: failed to accept\n", __FUNCTION__, conf->host, strerror(errno));
+			close(ctx->socket);
+			free(ctx);
+			return CSP_ERR_INVAL;
+		}
+		close(ctx->socket);
+		ctx->socket = newS;
 	} else {
 		struct in_addr remote;
 		if (inet_aton(conf->host, &remote) == 0) {
 			csp_print("  Bad remote address %s\n", conf->host);
+			close(ctx->socket);
+			free(ctx);
 			return CSP_ERR_INVAL;
 		}
 		addr.sin_addr.s_addr = htonl(remote.s_addr);
+		if(connect(ctx->socket, (struct sockaddr *)(&addr), sizeof(addr)) < 0) {
+			csp_print("%s[%s]: failed to connect\n", __FUNCTION__, conf->host, strerror(errno));
+			close(ctx->socket);
+			free(ctx);
+			return CSP_ERR_INVAL;
+		}
+		if (csp_dbg_packet_print >= 1)	{
+			csp_print("%s[%s]: connected to %s\n",__FUNCTION__, conf->host, conf->host);
+		}
 	}
 
 	if (rx_callback) {
