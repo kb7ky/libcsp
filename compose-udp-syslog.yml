@@ -1,0 +1,153 @@
+version:  "3"
+
+services:
+  broker1:
+    image:  csp-base-stdio:latest
+    command: /libcsp/build/examples/zmqproxy -v 1
+    depends_on: 
+      - syslog-ng
+    logging:
+      driver: syslog
+      options:
+        syslog-address: tcp://192.168.0.102:5514
+        syslog-facility: syslog
+        syslog-format: rfc3164
+        tag: broker1
+        mode: non-blocking
+    ports:
+      - 6000
+    networks:
+      - udp1
+  server1:
+    image:  csp-base-stdio:latest
+    command: tail -f /dev/null # /libcsp/build/examples/csp_server_client -a 1 -z broker1
+    depends_on: 
+      - syslog-ng
+    logging:
+      driver: syslog
+      options:
+        syslog-address: tcp://192.168.0.102:5514
+        syslog-facility: syslog
+        syslog-format: rfc3164
+        tag: server1
+        mode: non-blocking
+    networks:
+      - udp1
+  client1:
+    image: csp-base-stdio:latest
+    command: tail -f /dev/null
+    depends_on: 
+      - syslog-ng
+    logging:
+      driver: syslog
+      options:
+        syslog-address: tcp://192.168.0.102:5514
+        syslog-facility: syslog
+        syslog-format: rfc3164
+        tag: client1
+        mode: non-blocking
+    networks:
+      - udp1
+  bridge1:
+    image:  csp-base-stdio:latest
+    command: /libcsp/build/examples/csp_bridge -h udpt1 -m 1 -r 1 -d -d -d -d
+    depends_on: 
+      - syslog-ng
+    logging:
+      driver: syslog
+      options:
+        syslog-address: tcp://192.168.0.102:5514
+        syslog-facility: syslog
+        syslog-format: rfc3164
+        tag: bridge1
+        mode: non-blocking
+    ports:
+      - 9600:9600/udp
+    networks:
+      - udp1
+      - udp2
+  broker2:
+    image:  csp-base-stdio:latest
+    command: /libcsp/build/examples/zmqproxy -v 1
+    depends_on: 
+      - syslog-ng
+    logging:
+      driver: syslog
+      options:
+        syslog-address: tcp://192.168.0.102:5514
+        syslog-facility: syslog
+        syslog-format: rfc3164
+        tag: broker2
+        mode: non-blocking
+    ports:
+      - 6000
+    networks:
+      - udp2
+  server2:
+    image:  csp-base-stdio:latest
+    command: /libcsp/build/examples/csp_server_client -a 10 -z broker2 -q
+    depends_on: 
+      - syslog-ng
+    logging:
+      driver: syslog
+      options:
+        syslog-address: tcp://192.168.0.102:5514
+        syslog-facility: syslog
+        syslog-format: rfc3164
+        tag: server2
+        mode: non-blocking
+    networks:
+      - udp2
+  client2:
+    image: csp-base-stdio:latest
+    command: tail -f /dev/null
+    depends_on: 
+      - syslog-ng
+    logging:
+      driver: syslog
+      options:
+        syslog-address: tcp://192.168.0.102:5514
+        syslog-facility: syslog
+        syslog-format: rfc3164
+        tag: client2
+        mode: non-blocking
+    networks:
+      - udp2
+  bridge2:
+    image:  csp-base-stdio:latest
+    command: /libcsp/build/examples/csp_bridge -h udpt2 -m 1 -r 1 -d -d -d -d
+    depends_on: 
+      - syslog-ng
+    logging:
+      driver: syslog
+      options:
+        syslog-address: tcp://192.168.0.102:5514
+        syslog-facility: syslog
+        syslog-format: rfc3164
+        tag: bridge2
+        mode: non-blocking
+    ports:
+      - 9700:9700/udp
+    networks:
+      - udp1
+      - udp2
+  syslog-ng:
+    image: lscr.io/linuxserver/syslog-ng
+    container_name: syslog-ng
+    environment:
+      - PUID=0
+      - PGID=0
+      - TZ=GMT
+    volumes:
+      - ./syslog-ng/config:/config
+      - ./syslog-ng/logs:/var/log/syslog-ng
+    restart: unless-stopped
+    ports:
+      - 5514:5514/udp
+      - 5514:5514/tcp
+    networks:
+      - syslog-ng
+networks:
+  udp1:
+  udp2:
+  syslog-ng:
