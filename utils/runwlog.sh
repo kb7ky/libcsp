@@ -15,4 +15,4 @@ cmd=$*
 
 echo $server $ground $port "> $cmd <"
 
-$cmd | logio/sendto_logio.sh $server $ground $radio
+unbuffer $cmd | logio/sendto_logio.sh $server $ground $radio
