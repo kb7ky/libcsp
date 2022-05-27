@@ -72,7 +72,7 @@ services:
     working_dir: /libcsp
     depends_on: 
       - logio
-    command: utils/runwlog.sh logio TX broker2 /libcsp/build/examples/zmqproxy -v 1 -q
+    command: utils/runwlog.sh logio TX broker2 /libcsp/build/examples/zmqproxy -v 1
     logging:
       driver: local
       options:
@@ -89,7 +89,7 @@ services:
     working_dir: /libcsp
     depends_on: 
       - logio
-    command: utils/runwlog.sh logio TX server2 /libcsp/build/examples/csp_server_client -a 10 -z broker2 -q
+    command: utils/runwlog.sh logio TX server2 /libcsp/build/examples/csp_server_client -a 10 -z broker2
     logging:
       driver: local
       options:

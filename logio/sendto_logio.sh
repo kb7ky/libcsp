@@ -1,6 +1,6 @@
 #!/bin/bash
 # Script to send to log.io server
-USAGE="$0: -s server -g station -r radio"
+USAGE="$0: server station radio"
 
 if [ $# != 3 ]
 then
