@@ -26,7 +26,7 @@ echo -e "+input|${station}|${radio}\0" | nc $server $port
 while read line
 do
     echo $line
-    echo -e "+msg|${station}|${radio}|${line}\0" | nc $server $port
+    unbuffer echo -e "+msg|${station}|${radio}|${line}\0" | nc $server $port
 done
 
 echo -e "+msg|${station}|${radio}|logio exiting\0" | nc $server $port
