@@ -6,7 +6,9 @@ services:
     stdin_open: true
     tty:  true
     working_dir: /libcsp
-    command: utils/runwlog.sh host.docker.internal AZ broker1 /libcsp/build/examples/zmqproxy -v 1
+    depends_on: 
+      - logio
+    command: utils/runwlog.sh logio AZ broker1 /libcsp/build/examples/zmqproxy -v 1
     logging:
       driver: local
       options:
@@ -14,8 +16,7 @@ services:
         max-size: "10m"
     ports:
       - 6000
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - 6689
     networks:
       - udp1
   server1:
@@ -23,14 +24,14 @@ services:
     stdin_open: true
     tty:  true
     working_dir: /libcsp
-    command: utils/runwlog.sh host.docker.internal AZ server1 /libcsp/build/examples/csp_server_client -a 1 -z broker1 
+    depends_on: 
+      - logio
+    command: utils/runwlog.sh logio AZ server1 /libcsp/build/examples/csp_server_client -a 1 -z broker1 
     logging:
       driver: local
       options:
         max-file: "5"
         max-size: "10m"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     networks:
       - udp1
   client1:
@@ -51,7 +52,9 @@ services:
     stdin_open: true
     tty:  true
     working_dir: /libcsp
-    command: utils/runwlog.sh host.docker.internal AZ bridge1 /libcsp/build/examples/csp_bridge -h udpt1 -m 1 -r 1
+    depends_on: 
+      - logio
+    command: utils/runwlog.sh logio AZ bridge1 /libcsp/build/examples/csp_bridge -h udpt1 -m 1 -r 1
     logging:
       driver: local
       options:
@@ -59,8 +62,6 @@ services:
         max-size: "10m"
     ports:
       - 9600:9600/udp
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     networks:
       - udp1
       - udp2
@@ -69,7 +70,9 @@ services:
     stdin_open: true
     tty:  true
     working_dir: /libcsp
-    command: utils/runwlog.sh host.docker.internal TX broker2 /libcsp/build/examples/zmqproxy -v 1 -q
+    depends_on: 
+      - logio
+    command: utils/runwlog.sh logio TX broker2 /libcsp/build/examples/zmqproxy -v 1 -q
     logging:
       driver: local
       options:
@@ -77,8 +80,6 @@ services:
         max-size: "10m"
     ports:
       - 6000
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     networks:
       - udp2
   server2:
@@ -86,14 +87,14 @@ services:
     stdin_open: true
     tty:  true
     working_dir: /libcsp
-    command: utils/runwlog.sh host.docker.internal TX server2 /libcsp/build/examples/csp_server_client -a 10 -z broker2 -q
+    depends_on: 
+      - logio
+    command: utils/runwlog.sh logio TX server2 /libcsp/build/examples/csp_server_client -a 10 -z broker2 -q
     logging:
       driver: local
       options:
         max-file: "5"
         max-size: "10m"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     networks:
       - udp2
   client2:
@@ -113,7 +114,9 @@ services:
     stdin_open: true
     tty:  true
     working_dir: /libcsp
-    command: utils/runwlog.sh host.docker.internal TX bridge2 /libcsp/build/examples/csp_bridge -h udpt2 -m 1 -r 1
+    depends_on: 
+      - logio
+    command: utils/runwlog.sh logio TX bridge2 /libcsp/build/examples/csp_bridge -h udpt2 -m 1 -r 1
     logging:
       driver: local
       options:
@@ -121,8 +124,20 @@ services:
         max-size: "10m"
     ports:
       - 9700:9700/udp
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    networks:
+      - udp1
+      - udp2
+  logio:
+    image:  logio:latest
+    command: bash -c ./run_logio.sh
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - "6688:6688"
+      - "6689:6689"
     networks:
       - udp1
       - udp2

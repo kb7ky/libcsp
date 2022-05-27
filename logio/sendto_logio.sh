@@ -16,17 +16,17 @@ server=$1
 station=$2
 radio=$3
 
-echo Starting log to $server:6689 for $station - $radio
-
 # init stream
-echo -e "-input|${station}|${radio}\0" | nc $server $port
-echo -e "+input|${station}|${radio}\0" | nc $server $port
+echo -e "-input|${station}|${radio}\0" | nc -q 0 $server $port
+echo -e "+input|${station}|${radio}\0" | nc -q 0 $server $port
+
+echo Starting log to $server:6689 for $station - $radio
 
 # main loop
 while read line
 do
     echo $line
-    unbuffer echo -e "+msg|${station}|${radio}|${line}\0" | nc $server $port
+    echo -e "+msg|${station}|${radio}|${line}\0" | nc -q 0 $server $port
 done
 
-echo -e "+msg|${station}|${radio}|logio exiting\0" | nc $server $port
+echo -e "+msg|${station}|${radio}|logio exiting\0" | nc -q 0 $server $port
