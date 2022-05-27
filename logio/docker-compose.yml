@@ -1,0 +1,19 @@
+version:  "3"
+
+services:
+  logio:
+    image:  logio:latest
+    command: bash -c ./run_logio.sh
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - "6688:6688"
+      - "6689:6689"
+    networks:
+      - logging
+networks:
+  logging:
+

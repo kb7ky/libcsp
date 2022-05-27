@@ -1,0 +1,15 @@
+{
+    "messageServer": {
+      "host": "0.0.0.0",
+      "port": 6689
+    },
+    "inputs": [
+      {
+        "source": "server1",
+        "stream": "app1",
+        "config": {
+          "path": "log.io-demo/file-generator/app1-server1.log"
+        }
+      }
+    ]
+  }

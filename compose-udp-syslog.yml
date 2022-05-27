@@ -20,7 +20,7 @@ services:
       - udp1
   server1:
     image:  csp-base-stdio:latest
-    command: tail -f /dev/null # /libcsp/build/examples/csp_server_client -a 1 -z broker1
+    command: /libcsp/build/examples/csp_server_client -a 1 -z broker1
     depends_on: 
       - syslog-ng
     logging:
