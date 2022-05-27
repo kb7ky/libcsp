@@ -16,6 +16,8 @@ server=$1
 station=$2
 radio=$3
 
+echo Starting log to $server:6689 for $station - $radio
+
 # init stream
 echo -e "-input|${station}|${radio}\0" | nc $server $port
 echo -e "+input|${station}|${radio}\0" | nc $server $port

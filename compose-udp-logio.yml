@@ -6,7 +6,7 @@ services:
     stdin_open: true
     tty:  true
     working_dir: /libcsp
-    command: utils/runwlog.sh localhost AZ broker1 /libcsp/build/examples/zmqproxy -v 1
+    command: utils/runwlog.sh 192.168.0.102 AZ broker1 /libcsp/build/examples/zmqproxy -v 1
     logging:
       driver: local
       options:
@@ -21,7 +21,7 @@ services:
     stdin_open: true
     tty:  true
     working_dir: /libcsp
-    command: utils/runwlog.sh localhost AZ server1 /libcsp/build/examples/csp_server_client -a 1 -z broker1 
+    command: utils/runwlog.sh 192.168.0.102 AZ server1 /libcsp/build/examples/csp_server_client -a 1 -z broker1 
     logging:
       driver: local
       options:
@@ -47,7 +47,7 @@ services:
     stdin_open: true
     tty:  true
     working_dir: /libcsp
-    command: utils/runwlog.sh localhost AZ bridge1 /libcsp/build/examples/csp_bridge -h udpt1 -m 1 -r 1
+    command: utils/runwlog.sh 192.168.0.102 AZ bridge1 /libcsp/build/examples/csp_bridge -h udpt1 -m 1 -r 1
     logging:
       driver: local
       options:
@@ -63,7 +63,7 @@ services:
     stdin_open: true
     tty:  true
     working_dir: /libcsp
-    command: utils/runwlog.sh localhost TX broker2 /libcsp/build/examples/zmqproxy -v 1 -q
+    command: utils/runwlog.sh 192.168.0.102 TX broker2 /libcsp/build/examples/zmqproxy -v 1 -q
     logging:
       driver: local
       options:
@@ -78,7 +78,7 @@ services:
     stdin_open: true
     tty:  true
     working_dir: /libcsp
-    command: utils/runwlog.sh localhost TX server2 /libcsp/build/examples/csp_server_client -a 10 -z broker2 -q
+    command: utils/runwlog.sh 192.168.0.102 TX server2 /libcsp/build/examples/csp_server_client -a 10 -z broker2 -q
     logging:
       driver: local
       options:
@@ -103,7 +103,7 @@ services:
     stdin_open: true
     tty:  true
     working_dir: /libcsp
-    command: utils/runwlog.sh localhost TX bridge2 /libcsp/build/examples/csp_bridge -h udpt2 -m 1 -r 1
+    command: utils/runwlog.sh 192.168.0.102 TX bridge2 /libcsp/build/examples/csp_bridge -h udpt2 -m 1 -r 1
     logging:
       driver: local
       options:
