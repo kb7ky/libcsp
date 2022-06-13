@@ -58,6 +58,8 @@ static void * tcp_rx_thread(void * arg) {
 			sleep(5);
 			continue;
 		}
+		csp_print("%s: calling read()\n",__FUNCTION__);
+
 		int length = read(ctx->socket, cbuf, CBUF_SIZE);
 		if (length <= 0) {
 			csp_print("%s: read() failed, returned: %d\n", __FUNCTION__, length);
