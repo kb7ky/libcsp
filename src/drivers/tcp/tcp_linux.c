@@ -66,7 +66,7 @@ static void * tcp_rx_thread(void * arg) {
 			close(sock);
 			continue;			
 		}
-		csp_print("%s: read() returned %d bytes\n",__FUNCTION__,length);)
+		csp_print("%s: read() returned %d bytes\n",__FUNCTION__,length);
 		ctx->rx_callback(ctx->user_data, cbuf, length, NULL);
 	}
 	return NULL;
