@@ -91,6 +91,8 @@ int csp_tcp_write(csp_tcp_fd_t fd, const void * data, size_t data_length) {
 			csp_print("%s: close fd\n",__FUNCTION__);
 			close(fd);
 		}
+	} else {
+		csp_print("%s: fd < 0\n",__FUNCTION__);
 	}
 	return CSP_ERR_TX;  // best matching CSP error code.
 }
