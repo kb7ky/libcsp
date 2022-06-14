@@ -242,6 +242,7 @@ int csp_tcp_open(const csp_tcp_conf_t * conf, csp_tcp_callback_t rx_callback, vo
 	ctx->port = conf->port;
 	ctx->listen = conf->listen;
 	ctx->socket = -1;
+	ctx->return_fd = return_fd;
 	strncpy(ctx->host, conf->host, sizeof(ctx->host) - 1);
 
 	// Open socket and connect
