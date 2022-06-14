@@ -58,7 +58,7 @@ static void * tcp_rx_thread(void * arg) {
 			sleep(5);
 			continue;
 		}
-		csp_print("%s: calling read()\n",__FUNCTION__);
+		// csp_print("%s: calling read()\n",__FUNCTION__);
 
 		int length = read(ctx->socket, cbuf, CBUF_SIZE);
 		if (length <= 0) {
@@ -68,7 +68,7 @@ static void * tcp_rx_thread(void * arg) {
 			close(sock);
 			continue;			
 		}
-		csp_print("%s: read() returned %d bytes\n",__FUNCTION__,length);
+		// csp_print("%s: read() returned %d bytes\n",__FUNCTION__,length);
 		ctx->rx_callback(ctx->user_data, cbuf, length, NULL);
 	}
 	return NULL;

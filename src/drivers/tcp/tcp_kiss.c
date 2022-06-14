@@ -21,6 +21,7 @@ static int kiss_driver_tx(void * driver_data, const unsigned char * data, size_t
 	if (csp_tcp_write(ctx->fd, data, data_length) == (int)data_length) {
 		return CSP_ERR_NONE;
 	}
+	ctx->fd = -1; // error has closed fd
 	return CSP_ERR_TX;
 }
 
