@@ -218,6 +218,7 @@ int csp_tcp_socket(tcp_context_t * ctx) {
 	}
 
 	if(retVal != CSP_ERR_NONE) {
+		csp_print("%s: reconnect failed with %d\n",__FUNCTION__, retVal);
 		return retVal;
 	}
 
