@@ -42,7 +42,7 @@ void csp_tcp_unlock(void * driver_data) {
 }
 
 static void * tcp_rx_thread(void * arg) {
-
+	int retVal = 0;
 	tcp_context_t * ctx = arg;
 	const unsigned int CBUF_SIZE = 400;
 	uint8_t * cbuf = malloc(CBUF_SIZE);
@@ -52,10 +52,15 @@ static void * tcp_rx_thread(void * arg) {
 
 		// retry logic
 		if(ctx->socket == -1) {
-			csp_tcp_socket(ctx);
+			retVal = csp_tcp_socket(ctx);
+			if(retVal != CSP_ERR_NONE) {
+				sleep(5);
+				csp_print("%s: Retry connect\n",__FUNCTION__);
+				continue;
+			}
 		}
 		if(ctx->socket == -1) {
-			sleep(5);
+			csp_print("%s: got here with ctx->socket == -1\n",__FUNCTION__);
 			continue;
 		}
 		// csp_print("%s: calling read()\n",__FUNCTION__);
@@ -232,10 +237,11 @@ int csp_tcp_open(const csp_tcp_conf_t * conf, csp_tcp_callback_t rx_callback, vo
 	ctx->user_data = user_data;
 	ctx->port = conf->port;
 	ctx->listen = conf->listen;
+	ctx->socket = -1;
 	strncpy(ctx->host, conf->host, sizeof(ctx->host) - 1);
 
 	// Open socket and connect
-	csp_tcp_socket(ctx);
+	// csp_tcp_socket(ctx);
 
 	if (rx_callback) {
 		int ret;
@@ -251,7 +257,7 @@ int csp_tcp_open(const csp_tcp_conf_t * conf, csp_tcp_callback_t rx_callback, vo
 		ret = pthread_create(&ctx->rx_thread, &attributes, tcp_rx_thread, ctx);
 		if (ret != 0) {
 			csp_print("%s: pthread_create() failed to create Rx thread for device: [%s], errno: %s\n", __FUNCTION__, conf->host, strerror(errno));
-			close(ctx->socket);
+			// close(ctx->socket);
 			free(ctx);
 			return CSP_ERR_NOMEM;
 		}
