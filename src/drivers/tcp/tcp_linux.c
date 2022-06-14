@@ -88,6 +88,7 @@ int csp_tcp_write(csp_tcp_fd_t fd, const void * data, size_t data_length) {
 		} else {
 			// Strategy here is that the close of fd (which is the socket) will
 			// cause the read thread to error out and begin the retry logic
+			csp_print("%s: close fd\n",__FUNCTION__);
 			close(fd);
 		}
 	}
