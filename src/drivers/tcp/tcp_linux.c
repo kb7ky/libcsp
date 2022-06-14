@@ -23,7 +23,7 @@ typedef struct {
 	void * user_data;
 	int socket;
 	pthread_t rx_thread;
-	char host[CSP_IFLIST_NAME_MAX + 1];
+	char host[16 + 1];
 	uint16_t port;
     int listen;
 	csp_tcp_fd_t * return_fd;
