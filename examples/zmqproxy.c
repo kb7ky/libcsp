@@ -17,6 +17,7 @@ const char * pub_str = "tcp://0.0.0.0:7000";
 char * logfile_name = NULL;
 int topiclen = 0;
 uint32_t topic = 0;
+uint16_t topic16 = 0;
 
 FILE * logfile;
 
@@ -73,7 +74,9 @@ static void * task_capture(void * ctx) {
 					topic = (int)(*((uint8_t *)(rx_data)));
 					break;
 				case 2:
-					topic = (int)(*((uint16_t *)(rx_data)));
+					// topic = (int)(*((uint16_t *)(rx_data)));
+					memcpy(&topic16, rx_data, sizeof(uint16_t));
+					topic = (int)(topic16);
 					break;
 			}
 			rx_data += topiclen;

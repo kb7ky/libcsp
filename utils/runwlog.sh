@@ -15,4 +15,8 @@ cmd=$*
 
 echo $server $ground $port "> $cmd <"
 
-unbuffer $cmd | logio/sendto_logio.sh $server $ground $radio
+while true
+do
+    unbuffer $cmd | logio/sendto_logio.sh $server $ground $radio
+    echo Restarting
+done

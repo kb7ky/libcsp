@@ -92,7 +92,10 @@ static void * tcpcan_rx_thread(void * arg) {
 		// XXX
 
 		/* Strip flags */
-		uint32_t can_id = ntohl(*((uint32_t*)&pcan_buff[24])) & 0x1fffffff;
+		uint32_t can_id = 0;
+		memcpy(&can_id, &pcan_buff[24], sizeof(uint32_t));
+		can_id = ntohl(can_id) & 0x1fffffff;
+		// cast alignment error - ntohl(*((uint32_t*)&pcan_buff[24])) & 0x1fffffff;
 		uint8_t dlc = pcan_buff[21];
 		uint8_t * data = &pcan_buff[28];
 

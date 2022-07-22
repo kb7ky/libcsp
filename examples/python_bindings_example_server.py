@@ -17,7 +17,6 @@ import threading
 
 import libcsp_py3 as libcsp
 
-
 def csp_server():
     # parameters: {options} - bit flag corresponding to socket options (see "include\csp\csp_types.h" lines 167-180)
     # creates new socket endpoint, returns socket or None
@@ -92,6 +91,7 @@ def csp_server():
 
 if __name__ == "__main__":
 
+    print("STDOUT fd = %d" % sys.stdout.fileno())
     #initialize libcsp with params:
         # 27              - CSP address of the system (default=1)
         # "test_service"  - Host name, returned by CSP identity requests
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     # init zmqhub with parameters: {address (using 255 means all addresses)} {host name/ip}
     # subscribe and publish endpoints are created on the default ports using the {host}
     # subscribe port = 6000, subscribe port = 7000
-    libcsp.zmqhub_init(27, "localhost")
+    libcsp.zmqhub_init(27, "localhost",0,0,0)
 
     # params: 
         # {address}         - dest address/node

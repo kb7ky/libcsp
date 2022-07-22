@@ -48,7 +48,7 @@ if __name__ == "__main__":
     if options.zmq: 
         # add ZMQ interface - (address, host)
         # creates publish and subrcribe endpoints from the host        
-        libcsp.zmqhub_init(options.address, options.zmq)        
+        libcsp.zmqhub_init(options.address, options.zmq, 0, 0, 0)        
         
         # Format: \<address\>[/mask] \<interface\> [via][, next entry]
         # Examples: "0/0 CAN, 8 KISS, 10 I2C 10", same as "0/0 CAN, 8/5 KISS, 10/5 I2C 10"
