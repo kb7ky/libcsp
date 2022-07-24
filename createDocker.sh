@@ -44,10 +44,6 @@ then
   export AWS_ECR_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
 
   aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ECR_REPO}
-  for imagename in testapps
-  do
-    echo "Pushing ${imagename}"
-    docker tag ${ECRPREFIX}/${imagename}:${CONTAINER_VERSION} "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECRPREFIX}/${imagename}:${CONTAINER_VERSION}"
-    docker push "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECRPREFIX}/${imagename}:${CONTAINER_VERSION}"
-  done
+  docker tag csp-base-stdio "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECRPREFIX}/testapps:${CONTAINER_VERSION}"
+  docker push "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECRPREFIX}/testapps:${CONTAINER_VERSION}"
 fi
