@@ -7,7 +7,6 @@ RUN apt-get update && apt-get install --no-install-recommends -y libczmq4 && \
 
 RUN useradd --create-home csp
 COPY --from=builder-image libcsp/build/examples /home/csp/apps
-Copy --from=builder-image test /home/csp/apps
 
 USER csp
 
