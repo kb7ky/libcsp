@@ -16,7 +16,10 @@ csp_conf_t csp_conf = {
 	.model = "",
 	.revision = "",
 	.conn_dfl_so = CSP_O_NONE,
-	.dedup = CSP_DEDUP_OFF};
+	.dedup = CSP_DEDUP_OFF,
+	.pktsrc = 0,
+	.mode = CSP_MODE_NONE
+};
 
 uint16_t csp_get_address(void) {
 	return csp_conf.address;

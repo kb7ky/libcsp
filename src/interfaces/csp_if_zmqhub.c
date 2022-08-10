@@ -42,6 +42,7 @@ static void set_filters(zmq_driver_t *drv, uint16_t addr, uint16_t hostmask, int
  * @return 1 if packet was successfully transmitted, 0 on error
  */
 int csp_zmqhub_tx(csp_iface_t * iface, uint16_t via, csp_packet_t * packet) {
+	const csp_conf_t * conf = csp_get_conf();
 
 	zmq_driver_t * drv = iface->driver_data;
 
@@ -49,6 +50,21 @@ int csp_zmqhub_tx(csp_iface_t * iface, uint16_t via, csp_packet_t * packet) {
 	sa_set_addr(drv, packet->id.src);
 
 	csp_id_prepend(packet);
+
+	/* based on Mode, set CSP_FCMD_TLM and CSP_FSRC */
+	switch(conf->mode) {
+		case CSP_MODE_NONE:
+			break;
+		case CSP_MODE_CMDTX:
+			packet->id.flags |= (CSP_FCMD | (conf->pktsrc << 5));
+			break;
+		case CSP_MODE_TLMTX:
+			packet->id.flags |= (CSP_FTLM | (conf->pktsrc << 5));
+			break;
+		default:
+			csp_print("ZMQTX: Invalide Mode set for this node %d\n",conf->mode);
+			break;
+	}
 
 	/* Print header data */
 	if (csp_dbg_packet_print >= 3)	{
@@ -94,7 +110,8 @@ void * csp_zmqhub_task(void * param) {
 
 	zmq_driver_t * drv = param;
 	csp_packet_t * packet;
-	const uint32_t HEADER_SIZE = (csp_conf.version == 2) ? 6 : 4;
+	const csp_conf_t * conf = csp_get_conf();
+	const uint32_t HEADER_SIZE = (conf->version == 2) ? 6 : 4;
 
 	while (1) {
 		int ret;
@@ -159,6 +176,37 @@ void * csp_zmqhub_task(void * param) {
 			   packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
 		}
 
+		/* based on Mode, process CSP_FCMD_TLM and CSP_FSRC to squelch reflections */
+		switch(conf->mode) {
+			case CSP_MODE_NONE:
+				break;
+			case CSP_MODE_CMDTX:
+				if((packet->id.flags & CSP_FTLM) == 0) {      /* CSP_FCMD == 0 */
+					if (csp_dbg_packet_print >= 4)	{
+						csp_print("ZMQRX Dropped in CMDTX mode\nPacket: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
+							packet->id.src, packet->id.dst, packet->id.dport,
+							packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
+					}
+					csp_buffer_free(packet);
+					continue;
+				}
+				break;
+			case CSP_MODE_TLMTX:
+				if(packet->id.flags & CSP_FTLM) {
+					if (csp_dbg_packet_print >= 4)	{
+						csp_print("ZMQRX Dropped in TLMTX mode\nPacket: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
+							packet->id.src, packet->id.dst, packet->id.dport,
+							packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
+					}
+					csp_buffer_free(packet);
+					continue;
+				}
+				break;
+			default:
+				csp_print("ZMQTX: Invalide Mode set for this node %d\n",conf->mode);
+				break;
+		}
+
 		if(packet->id.src == drv->iface.addr || sa_check_addr(drv, packet) == false) {
 			if (csp_dbg_packet_print >= 4)	{
 				csp_print("ZMQRXDupe Packet: Src %u, Dst %u, Dport %u, Sport %u, Pri %u, Flags 0x%02X, Size %" PRIu16 "\n",
@@ -168,6 +216,9 @@ void * csp_zmqhub_task(void * param) {
 			csp_buffer_free(packet);
 			continue;
 		}
+
+		// Remove CGID FLAGS
+		packet->id.flags = CSP_FLOCAL_REMOVE(packet->id.flags);
 
 		// Route packet
 		csp_qfifo_write(packet, &drv->iface, NULL);

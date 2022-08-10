@@ -139,7 +139,7 @@ static PyObject * pycsp_service_handler(PyObject * self, PyObject * args) {
 
 static PyObject * pycsp_init(PyObject * self, PyObject * args) {
 
-	if (!PyArg_ParseTuple(args, "bsss", &csp_conf.address, &csp_conf.hostname, &csp_conf.model, &csp_conf.revision)) {
+	if (!PyArg_ParseTuple(args, "bsssbb", &csp_conf.address, &csp_conf.hostname, &csp_conf.model, &csp_conf.revision, &csp_conf.mode, &csp_conf.pktsrc)) {
 		return NULL;
 	}
 

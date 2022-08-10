@@ -30,6 +30,10 @@ enum csp_dedup_types {
 	CSP_DEDUP_ALL,              /**< Deduplication on incoming and forwarding*/
 };
 
+#define CSP_MODE_NONE 0        /**< Mode (CGID bit overload in flags) not active */
+#define CSP_MODE_CMDTX 1       /**< Mode Node sends only Commands */
+#define CSP_MODE_TLMTX 2       /**< Mode Node sends only Telemetry */
+
 /**
    CSP configuration.
 */
@@ -41,6 +45,8 @@ typedef struct csp_conf_s {
 	const char *revision;       /**< Revision, returned by the #CSP_CMP_IDENT request */
 	uint32_t conn_dfl_so;       /**< Default connection options. Options will always be or'ed onto new connections, see csp_connect() */
 	uint8_t dedup;              /**< Enable CSP deduplication. 0 = off, 1 = always on, 2 = only on forwarded packets,  */
+   uint8_t pktsrc;             /**< Packet Source - see ifzmqhub.h for #defs */
+   uint8_t mode;               /**< Node Mode - 0 = off, 1 = CmdTx, 2 = TlmTx */
 } csp_conf_t;
 
 extern csp_conf_t csp_conf;

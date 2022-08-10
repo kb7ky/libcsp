@@ -4,7 +4,7 @@
    @file
 
    ZMQ (ZeroMQ) interface.
-
+L
    The ZMQ interface is designed to connect to a ZMQ hub, also refered to as \a zmqproxy. The zmqproxy can be found under examples,
    and is based on zmq_proxy() - provided by the ZMQ API.
 

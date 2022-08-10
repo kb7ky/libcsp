@@ -14,6 +14,7 @@ import os
 import time
 import sys
 import threading
+import argparse
 
 import libcsp_py3 as libcsp
 
@@ -88,8 +89,15 @@ def csp_server():
                 # will handle and send reply packets if necessary
                 libcsp.service_handler(conn, packet)
 
+def getOptions():
+    parser = argparse.ArgumentParser(description="Parses command.")
+    parser.add_argument("-o", "--packet-source", type=int, default=0, help="Packet Source CGID")
+    parser.add_argument("-M", "--mode", type=int, default=0, help="Mode for this node (0=off,1=cmdtx,2=tlmtx")
+    return parser.parse_args(sys.argv[1:])
+
 
 if __name__ == "__main__":
+    options = getOptions()
 
     print("STDOUT fd = %d" % sys.stdout.fileno())
     #initialize libcsp with params:
@@ -97,9 +105,11 @@ if __name__ == "__main__":
         # "test_service"  - Host name, returned by CSP identity requests
         # "bindings"      - Model, returned by CSP identity requests
         # "1.2.3"         - Revision, returned by CSP identity requests
+        # Mode            - Mode controls CGID bits (0=off, 1=CMDTX, 2=TLMTX)
+        # PktSRC          - 2 bits of identifier for Source of packet
     # See "include\csp\csp.h" - lines 42-80 for more detail
     # See "src\bindings\python\pycsp.c" - lines 128-156 for more detail
-    libcsp.init(27, "test_service", "bindings", "1.2.3")
+    libcsp.init(27, "test_service", "bindings", "1.2.3", options.mode, options.packet_source)
     
     # init zmqhub with parameters: {address (using 255 means all addresses)} {host name/ip}
     # subscribe and publish endpoints are created on the default ports using the {host}

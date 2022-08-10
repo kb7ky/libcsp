@@ -70,6 +70,33 @@ typedef struct  __attribute__((packed)) {
 /**@}*/
 
 /**
+   Local Additions - 
+   Use the CSP_FRES1, CSP_FRES2, and CSP_FRES3 as 2 fields
+   CSP_FCMD_TLM - Command (0) or Telemetry (1)
+   CSP_FSRC_MASK - CSP_FRES2 | CSP_FRES3 - command or tlm source
+
+   Bits are enabled by setting csp_conf.mode to CSP_MODE_CMDTX or CSP_MODE_TLMTX
+   
+   Note: bits MUST be removed before sending to Modems
+*/
+#define CSP_FLOCAL_REMOVE(flags) (flags & ~(CSP_FRES1 | CSP_FRES2 | CSP_FRES3))
+
+#define CSP_FCMD_TLM_MASK CSP_FRES1
+#define CSP_FCMD 0
+#define CSP_FTLM CSP_FRES1
+
+#define CSP_FSRC_MASK (CSP_FRES2 | CSP_FRES3)
+#define CSP_FSRC_CMD_S1        ( 0x00 << 5 )
+#define CSP_FSRC_CMD_C1        ( 0x01 << 5 )
+#define CSP_FSRC_CMD_C2        ( 0x10 << 5 )
+#define CSP_FSRC_CMD_CX        ( 0x11 << 5 )
+
+#define CSP_FSRC_TLM_UHF   ( 0x00 << 5 )
+#define CSP_FSRC_TLM_QV    ( 0x01 << 5 )
+#define CSP_FSRC_TLM_SB    ( 0x10 << 5 )
+#define CSP_FSRC_TLM_VEND  ( 0x11 << 5 )
+
+/**
    @defgroup CSP_SOCKET_OPTIONS CSP Socket options.
    @{
 */

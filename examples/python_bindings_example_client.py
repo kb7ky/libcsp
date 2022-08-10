@@ -25,6 +25,8 @@ def getOptions():
     parser.add_argument("-z", "--zmq", help="Add ZMQ interface")
     parser.add_argument("-s", "--server-address", type=int, default=27, help="Server address")
     parser.add_argument("-R", "--routing-table", help="Routing table")
+    parser.add_argument("-o", "--packet-source", type=int, default=0, help="Packet Source CGID")
+    parser.add_argument("-M", "--mode", type=int, default=0, help="Mode for this node (0=off,1=cmdtx,2=tlmtx")
     return parser.parse_args(sys.argv[1:])
 
 
@@ -37,9 +39,11 @@ if __name__ == "__main__":
         # "host"          - Host name, returned by CSP identity requests
         # "model"         - Model, returned by CSP identity requests
         # "1.2.3"         - Revision, returned by CSP identity requests
+        # Mode            - Mode controls CGID bits (0=off, 1=CMDTX, 2=TLMTX)
+        # PktSRC          - 2 bits of identifier for Source of packet
     # See "include\csp\csp.h" - lines 42-80 for more detail
     # See "src\bindings\python\pycsp.c" - lines 128-156 for more detail
-    libcsp.init(options.address, "host", "model", "1.2.3")
+    libcsp.init(options.address, "host", "model", "1.2.3", options.mode, options.packet_source)
 
     if options.can:
         # add CAN interface

@@ -248,7 +248,7 @@ int main(int argc, char * argv[]) {
 #endif
     const char * rtable = NULL;
     int opt;
-    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:hp:i:s:fCF:qSm:y")) != -1) {
+    while ((opt = getopt(argc, argv, "a:dr:c:k:z:tR:hp:i:s:fCF:qSm:yo:M:")) != -1) {
         switch (opt) {
             case 'a':
                 address = atoi(optarg);
@@ -309,6 +309,12 @@ int main(int argc, char * argv[]) {
             case 'y':
                 clientFlags |= CSP_O_RDP;
                break;
+            case 'o':
+                csp_conf.pktsrc = (atoi(optarg) & 0x03);
+                break;
+            case 'M':
+                csp_conf.mode = atoi(optarg);
+                break;
             default:
                 csp_print("Usage:\n"
                        " -a <address>     local CSP address\n"
@@ -328,6 +334,8 @@ int main(int argc, char * argv[]) {
                        " -S speed testing - turn off ping and reboot messages\n"
                        " -m <mtu> - use SFP protocol with MTU sized fragments\n"
                        " -y use rdp to ACK packets\n"
+                       " -o packet Source ID\n"
+                       " -M node Mode (0=none, 1=CmdTx, 2=TlmTx)\n"
                        " -t               enable test mode\n");
                 exit(1);
                 break;

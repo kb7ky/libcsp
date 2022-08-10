@@ -30,7 +30,7 @@ int main(int argc, char * argv[]) {
     char yamlBuffer[CSP_MAX_STRING + 1];
     char * yamlpathPtr = &defaultYamlPath[0];
 
-    while ((opt = getopt(argc, argv, "h:dm:r:v:p:")) != -1) {
+    while ((opt = getopt(argc, argv, "h:dm:r:v:p:o:M:")) != -1) {
         switch (opt) {
 			case 'd':
 				csp_dbg_packet_print++;
@@ -54,6 +54,12 @@ int main(int argc, char * argv[]) {
                 strncpy(yamlBuffer, optarg, CSP_MAX_STRING);
                 yamlpathPtr = yamlBuffer;
                 break;
+            case 'o':
+                csp_conf.pktsrc = (atoi(optarg) & 0x03);
+                break;
+            case 'M':
+                csp_conf.mode = atoi(optarg);
+                break;
             default:
                 csp_print("Usage:\n"
                        " -d increment packet debug level\n"
@@ -61,6 +67,8 @@ int main(int argc, char * argv[]) {
                        " -m <model\n"
                        " -r <revision\n"
                        " -p path to directory holding yaml file\n"
+                       " -o packet Source ID\n"
+                       " -M node Mode (0=none, 1=CmdTx, 2=TlmTx)\n"
                        " -v <csp version (1/2)\n"
             		);
                 exit(1);
