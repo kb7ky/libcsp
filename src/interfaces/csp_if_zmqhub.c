@@ -220,6 +220,9 @@ void * csp_zmqhub_task(void * param) {
 
 		// Remove CGID FLAGS
 		packet->id.flags = CSP_FLOCAL_REMOVE(packet->id.flags);
+		if (csp_dbg_packet_print >= 4)	{
+			csp_print("ZMQRX - flags after = %u\n", packet->id.flags);
+		}
 
 		// Route packet
 		csp_qfifo_write(packet, &drv->iface, NULL);

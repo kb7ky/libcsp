@@ -24,6 +24,12 @@ static int csp_if_udp_tx(csp_iface_t * iface, uint16_t via, csp_packet_t * packe
 		return CSP_ERR_BUSY;
 	}
 
+	if(csp_dbg_packet_print >= 3) {
+		csp_print("UDPOUT: S %u, D %u, Dp %u, Sp %u, Pr %u, Fl 0x%02X, Sz %"PRIu16" VIA: %u\n",
+         packet->id.src, packet->id.dst, packet->id.dport,
+         packet->id.sport, packet->id.pri, packet->id.flags, packet->length, packet->id.dst);
+	}
+
 	csp_id_prepend(packet);
 	ifconf->peer_addr.sin_family = AF_INET;
 	ifconf->peer_addr.sin_port = htons(ifconf->rport);
@@ -73,6 +79,12 @@ int csp_if_udp_rx_work(int sockfd, size_t mtu, csp_iface_t * iface) {
 		csp_buffer_free(packet);
 		iface->rx_error++;
 		return CSP_ERR_INVAL;
+	}
+
+	if(csp_dbg_packet_print >= 3) {
+		csp_print("UDPINP: S %u, D %u, Dp %u, Sp %u, Pr %u, Fl 0x%02X, Sz %"PRIu16" VIA: %s\n",
+			packet->id.src, packet->id.dst, packet->id.dport,
+			packet->id.sport, packet->id.pri, packet->id.flags, packet->length, "UDP");
 	}
 
 	csp_qfifo_write(packet, iface, NULL);
