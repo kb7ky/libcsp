@@ -49,8 +49,6 @@ int csp_zmqhub_tx(csp_iface_t * iface, uint16_t via, csp_packet_t * packet) {
 	/* record the source csp address as "our" address */
 	sa_set_addr(drv, packet->id.src);
 
-	csp_id_prepend(packet);
-
 	/* based on Mode, set CSP_FCMD_TLM and CSP_FSRC */
 	switch(conf->mode) {
 		case CSP_MODE_NONE:
@@ -65,6 +63,9 @@ int csp_zmqhub_tx(csp_iface_t * iface, uint16_t via, csp_packet_t * packet) {
 			csp_print("ZMQTX: Invalide Mode set for this node %d\n",conf->mode);
 			break;
 	}
+
+	/* pack the header */
+	csp_id_prepend(packet);
 
 	/* Print header data */
 	if (csp_dbg_packet_print >= 3)	{
