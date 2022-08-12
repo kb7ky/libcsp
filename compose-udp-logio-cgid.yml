@@ -54,7 +54,7 @@ services:
     working_dir: /libcsp
     depends_on: 
       - logio
-    command: utils/runwlog.sh logio AZ bridge1 /libcsp/build/examples/csp_bridge -h udpt1 -m 1 -r 1 -M 2 -o 1
+    command: utils/runwlog.sh logio AZ bridge1 /libcsp/build/examples/csp_bridge -h udpt1 -m 1 -r 1 -M 2 -o 1 -d -d -d
     logging:
       driver: local
       options:
@@ -89,7 +89,7 @@ services:
     working_dir: /libcsp
     depends_on: 
       - logio
-    command: utils/runwlog.sh logio TX server2 /libcsp/build/examples/csp_server_client -a 10 -z broker2 -M 1 -o 3
+    command: utils/runwlog.sh logio TX server2 /libcsp/build/examples/csp_server_client -a 10 -z broker2 -d -d -d -d
     logging:
       driver: local
       options:
@@ -116,7 +116,7 @@ services:
     working_dir: /libcsp
     depends_on: 
       - logio
-    command: utils/runwlog.sh logio TX bridge2 /libcsp/build/examples/csp_bridge -h udpt2 -m 1 -r 1 -M 2 -o 2
+    command: utils/runwlog.sh logio TX bridge2 /libcsp/build/examples/csp_bridge -h udpt2 -m 1 -r 1 -M 2 -o 2 -d -d -d
     logging:
       driver: local
       options:
