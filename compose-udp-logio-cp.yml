@@ -1,0 +1,170 @@
+version:  "3"
+
+services:
+  controlplane:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    working_dir: /libcsp
+    depends_on: 
+      - logio
+    command: utils/runwlog.sh logio ControlPlane CPBroker /libcsp/build/examples/zmqproxy -v 1
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - "5555:6000"
+      - "5556:7000"
+      - 6689
+    networks:
+      - control
+  broker1:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    working_dir: /libcsp
+    depends_on: 
+      - logio
+    command: utils/runwlog.sh logio AZ broker1 /libcsp/build/examples/zmqproxy -v 1
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - 6000
+      - 6689
+    networks:
+      - udp1
+  server1:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    working_dir: /libcsp
+    depends_on: 
+      - logio
+    command: utils/runwlog.sh logio AZ server1 /libcsp/build/examples/csp_server_client -a 1 -z broker1 
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    networks:
+      - udp1
+  client1:
+    image: csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    working_dir: /libcsp
+    command: tail -f /dev/null
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    networks:
+      - udp1
+  bridge1:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    working_dir: /libcsp
+    depends_on: 
+      - logio
+    command: utils/runwlog.sh logio AZ bridge1 /libcsp/build/examples/csp_bridge -h udpt1 -m 1 -r 1
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - 9600:9600/udp
+    networks:
+      - udp1
+      - udp2
+      - control
+  broker2:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    working_dir: /libcsp
+    depends_on: 
+      - logio
+    command: utils/runwlog.sh logio TX broker2 /libcsp/build/examples/zmqproxy -v 1
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - 6000
+    networks:
+      - udp2
+  server2:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    working_dir: /libcsp
+    depends_on: 
+      - logio
+    command: utils/runwlog.sh logio TX server2 /libcsp/build/examples/csp_server_client -a 10 -z broker2
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    networks:
+      - udp2
+  client2:
+    image: csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: tail -f /dev/null
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    networks:
+      - udp2
+  bridge2:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    working_dir: /libcsp
+    depends_on: 
+      - logio
+    command: utils/runwlog.sh logio TX bridge2 /libcsp/build/examples/csp_bridge -h udpt2 -m 1 -r 1
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - 9700:9700/udp
+    networks:
+      - udp1
+      - udp2
+      - control
+  logio:
+    image:  logio:latest
+    command: bash -c ./run_logio.sh
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - "6688:6688"
+      - "6689:6689"
+    networks:
+      - udp1
+      - udp2
+      - control
+networks:
+  udp1:
+  udp2:
+  control:
+
