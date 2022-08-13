@@ -187,7 +187,7 @@ int main(int argc, char * argv[]) {
     while(1) {
         rc = zmq_poll (items, 1, 60 * 1000); // 60 sec
         if(rc > 0) {
-            csp_print("Processing ControlPlane Message");
+            csp_print("Processing ControlPlane Message\n");
             controlPlaneMessageProcess();
         }
         csp_iflist_print();
