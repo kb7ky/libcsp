@@ -16,7 +16,7 @@
 extern csp_conf_t csp_conf;
 
 // defines
-#define CONTROLPLANE_BASE_PORT 6000
+#define CONTROLPLANE_BASE_PORT 7000
 
 // control plane
 typedef struct {
@@ -167,7 +167,7 @@ int main(int argc, char * argv[]) {
         csp_print("Failed to calloc for Subscriber Buffer\n");
         exit(5);
     }
-    if(makeEndpoints(cpSubscriberBuf, buf_size, cpHost, controlPlaneHostPort + 1000) != CSP_ERR_NONE) {
+    if(makeEndpoints(cpSubscriberBuf, buf_size, cpHost, controlPlaneHostPort - 1000) != CSP_ERR_NONE) {
         csp_print("Failed to build Sub Endpoint\n");
         exit(6);
     }
