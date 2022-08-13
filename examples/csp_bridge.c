@@ -16,7 +16,7 @@
 extern csp_conf_t csp_conf;
 
 // defines
-#define CONTROLPLANE_BASE_PORT 5555
+#define CONTROLPLANE_BASE_PORT 6000
 
 // control plane
 typedef struct {
@@ -167,7 +167,7 @@ int main(int argc, char * argv[]) {
         csp_print("Failed to calloc for Subscriber Buffer\n");
         exit(5);
     }
-    if(makeEndpoints(cpSubscriberBuf, buf_size, cpHost, controlPlaneHostPort + 1) != CSP_ERR_NONE) {
+    if(makeEndpoints(cpSubscriberBuf, buf_size, cpHost, controlPlaneHostPort + 1000) != CSP_ERR_NONE) {
         csp_print("Failed to build Sub Endpoint\n");
         exit(6);
     }
@@ -213,7 +213,7 @@ int controlPlaneInit(char * publish_endpoint, char * subscribe_endpoint) {
     cpd->context = zmq_ctx_new();
 	assert(cpd->context != NULL);
 
-	csp_print("ZMQ CONTROLPLANE INIT BRIDGE: pub(tx): [%s]\n\t sub(rx): [%s]\n", publish_endpoint, subscribe_endpoint);
+	csp_print("ZMQ CONTROLPLANE INIT BRIDGE: pub(tx): [%s] - sub(rx): [%s]\n", publish_endpoint, subscribe_endpoint);
 
     /* save endpoints for retries */
     cpd->publish_endpoint = publish_endpoint;
