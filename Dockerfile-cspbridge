@@ -2,7 +2,7 @@
 FROM csp-base-stdio as builder-image
 
 FROM ubuntu:20.04 AS runner-image
-RUN apt-get update && apt-get install --no-install-recommends -y libczmq4 && \
+RUN apt-get update && apt-get install --no-install-recommends -y libczmq4 mosquitto mosquitto-dev mosquitto-clients libmosquitto-dev && \
 	apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN useradd --create-home csp

@@ -10,6 +10,7 @@
 #include <csp/csp_rtable.h>
 #include <csp/csp_id.h>
 #include <csp/interfaces/csp_if_zmqhub.h>
+#include <csp/interfaces/csp_if_mqtt.h>
 #include <csp/interfaces/csp_if_can.h>
 #include <csp/interfaces/csp_if_lo.h>
 #include <csp/interfaces/csp_if_tun.h>
@@ -35,6 +36,15 @@ struct data_s {
 	char * listen_port;
 	char * remote_port;
 	char * promisc;
+	char * encryptRx;
+	char * encryptTx;
+	char * flipTopics;
+	char * user;
+	char * password;
+	char * subscriberTopic;
+	char * publisherTopic;
+	char * aes256IV;
+	char * aes256Key;
 };
 
 static int csp_yaml_getaddrinfo(char *fqdn, char *host, int hostsize) {
@@ -197,6 +207,43 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 	}
 #endif
 
+#if (CSP_HAVE_LIBMQTT)
+	/* ZMQ */
+    else if (strcmp(data->driver, "mqtt") == 0) {
+		
+
+		/* Check for valid server */
+		if (!data->server) {
+			csp_print("no server configured\n");
+			return;
+		}
+
+		char addrBuffer[16]; // xxx.xxx.xxx.xxx\0
+		if((csp_yaml_getaddrinfo(data->server, addrBuffer, sizeof(addrBuffer))) != 0) {
+			csp_print("zmq: unable to resolve server name\n");
+			exit(1);
+		}
+
+		int encryptRx = 0;
+		if (data->encryptRx) {
+			encryptRx = (strcmp("true", data->encryptRx) == 0) ? 1 : 0;
+		}
+
+		int encryptTx = 0;
+		if (data->encryptTx) {
+			encryptTx = (strcmp("true", data->encryptTx) == 0) ? 1 : 0;
+		}
+
+		int flipTopics = 0;
+		if (data->flipTopics) {
+			flipTopics = (strcmp("true", data->flipTopics) == 0) ? 1 : 0;
+		}
+
+		csp_mqtt_init(addr, data->name, &addrBuffer[0], atoi(data->remote_port), data->subscriberTopic,
+						data->publisherTopic, data->user, data->password, encryptRx, encryptTx, flipTopics, &iface);
+	}
+#endif
+
 #if (CSP_HAVE_LIBSOCKETCAN)
 	/* CAN */
 	else if (strcmp(data->driver, "can") == 0) {
@@ -253,7 +300,7 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 	iface->netmask = atoi(data->netmask);
 	iface->name = strdup(data->name);
 
-	csp_print("  %s addr: %u netmask %u\n", iface->name, iface->addr, iface->netmask);
+	// csp_print("csp_yaml -  %s addr: %u netmask %u\n", iface->name, iface->addr, iface->netmask);
 
 }
 
@@ -285,8 +332,26 @@ static void csp_yaml_key_value(struct data_s * data, char * key, char * value) {
 		data->remote_port = strdup(value);
 	} else if (strcmp(key, "promisc") == 0) {
 		data->promisc = strdup(value);
+	} else if (strcmp(key, "encryptRx") == 0) {
+		data->encryptRx = strdup(value);
+	} else if (strcmp(key, "encryptTx") == 0) {
+		data->encryptTx = strdup(value);
+	} else if (strcmp(key, "flipTopics") == 0) {
+		data->flipTopics = strdup(value);
+	} else if (strcmp(key, "user") == 0) {
+		data->user = strdup(value);
+	} else if (strcmp(key, "password") == 0) {
+		data->password = strdup(value);
+	} else if (strcmp(key, "subscriberTopic") == 0) {
+		data->subscriberTopic = strdup(value);
+	} else if (strcmp(key, "publisherTopic") == 0) {
+		data->publisherTopic = strdup(value);
+	} else if (strcmp(key, "aes256IV") == 0) {
+		data->aes256IV = strdup(value);
+	} else if (strcmp(key, "aes256Key") == 0) {
+		data->aes256Key = strdup(value);
 	} else {
-		csp_print("Unkown key %s\n", key);
+		csp_print("Unknown key %s\n", key);
 	}
 }
 
@@ -382,5 +447,14 @@ void csp_yaml_init(char * filename, unsigned int * dfl_addr) {
 	free(data.listen_port);
 	free(data.remote_port);
 	free(data.promisc);
+	free(data.encryptRx);
+	free(data.encryptTx);
+	free(data.flipTopics);
+	free(data.user);
+	free(data.password);
+	free(data.subscriberTopic);
+	free(data.publisherTopic);
+	free(data.aes256IV);
+	free(data.aes256Key);
 
 }

@@ -39,7 +39,10 @@ char yamlfn[CSP_MAX_STRING * 3];
 char * cpPublisherBuf;
 char * cpSubscriberBuf;
 char controlPlaneHost[CSP_MAX_STRING];
-int  controlPlaneHostPort = CONTROLPLANE_BASE_PORT;
+int  controlPlaneHostPubPort = 0;
+int  controlPlaneHostSubPort = 0;
+int controlPlaneActive = 1;
+zmq_pollitem_t items [1];
 
 /* forward Decls */
 int bridge_start(void);
@@ -58,7 +61,7 @@ int main(int argc, char * argv[]) {
     char yamlBuffer[CSP_MAX_STRING + 1];
     char * yamlpathPtr = &defaultYamlPath[0];
 
-    while ((opt = getopt(argc, argv, "h:dm:r:v:p:o:M:c:P:")) != -1) {
+    while ((opt = getopt(argc, argv, "h:dm:r:v:p:o:M:c:P:S:")) != -1) {
         switch (opt) {
 			case 'd':
 				csp_dbg_packet_print++;
@@ -93,7 +96,10 @@ int main(int argc, char * argv[]) {
                 cpHost = controlPlaneHost;
                 break;
             case 'P':
-                controlPlaneHostPort = atoi(optarg);
+                controlPlaneHostPubPort = atoi(optarg);
+                break;
+            case 'S':
+                controlPlaneHostSubPort = atoi(optarg);
                 break;
             default:
                 csp_print("Usage:\n"
@@ -106,7 +112,8 @@ int main(int argc, char * argv[]) {
                        " -M node Mode (0=none, 1=CmdTx, 2=TlmTx)\n"
                        " -v <csp version (1/2)\n"
                        " -c controlPlaneHostname\n"
-                       " -P controlPlaneHostPort\n"
+                       " -P controlPlaneHostPubPort\n"
+                       " -S controlPlaneHostSubPort\n"
             		);
                 exit(1);
                 break;
@@ -154,42 +161,52 @@ int main(int argc, char * argv[]) {
     csp_iflist_print();
 
     /* setup the control plane endpoints */
-    int buf_size = CSP_MAX_STRING;
-    if((cpPublisherBuf =  calloc(buf_size, 1)) == NULL) {
-        csp_print("Failed to calloc for Publisher Buffer\n");
-        exit(3);
-    }
-    if(makeEndpoints(cpPublisherBuf, buf_size, cpHost, controlPlaneHostPort) != CSP_ERR_NONE) {
-        csp_print("Failed to build Pub Endpoint\n");
-        exit(4);
-    }
-    if((cpSubscriberBuf =  calloc(buf_size, 1)) == NULL) {
-        csp_print("Failed to calloc for Subscriber Buffer\n");
-        exit(5);
-    }
-    if(makeEndpoints(cpSubscriberBuf, buf_size, cpHost, controlPlaneHostPort + 1000) != CSP_ERR_NONE) {
-        csp_print("Failed to build Sub Endpoint\n");
-        exit(6);
+    if(controlPlaneHostPubPort == 0 || controlPlaneHostSubPort == 0) {
+        controlPlaneActive = 0;
     }
 
-    /* initialize Control Place ZMQ */
-     csp_print("Initializing ControlPlane for Bridge\n");
-     if(controlPlaneInit(cpPublisherBuf, cpSubscriberBuf) != CSP_ERR_NONE) {
-        csp_print("Failed to initialize Control Plane ZMQ\n");
-        exit(7);
-     }   
+    if(controlPlaneActive) {
+        int buf_size = CSP_MAX_STRING;
+        if((cpPublisherBuf =  calloc(buf_size, 1)) == NULL) {
+            csp_print("Failed to calloc for Publisher Buffer\n");
+            exit(3);
+        }
+        if(makeEndpoints(cpPublisherBuf, buf_size, cpHost, controlPlaneHostPubPort) != CSP_ERR_NONE) {
+            csp_print("Failed to build Pub Endpoint\n");
+            exit(4);
+        }
+        if((cpSubscriberBuf =  calloc(buf_size, 1)) == NULL) {
+            csp_print("Failed to calloc for Subscriber Buffer\n");
+            exit(5);
+        }
+        if(makeEndpoints(cpSubscriberBuf, buf_size, cpHost, controlPlaneHostSubPort) != CSP_ERR_NONE) {
+            csp_print("Failed to build Sub Endpoint\n");
+            exit(6);
+        }
 
-    zmq_pollitem_t items [1];
-    items[0].socket = cpd->subscriber;
-    items[0].events = ZMQ_POLLIN;
+        /* initialize Control Place ZMQ */
+        csp_print("Initializing ControlPlane for Bridge\n");
+        if(controlPlaneInit(cpPublisherBuf, cpSubscriberBuf) != CSP_ERR_NONE) {
+            csp_print("Failed to initialize Control Plane ZMQ\n");
+            exit(7);
+        }   
+
+        items[0].socket = cpd->subscriber;
+        items[0].events = ZMQ_POLLIN;
+    }
 
     /* Wait for execution to end (ctrl+c) */
     while(1) {
-        rc = zmq_poll (items, 1, 60 * 1000); // 60 sec
-        if(rc > 0) {
-            csp_print("Processing ControlPlane Message\n");
-            controlPlaneMessageProcess();
+        if(controlPlaneActive) {
+            rc = zmq_poll (items, 1, 60 * 1000); // 60 sec
+            if(rc > 0) {
+                csp_print("Processing ControlPlane Message\n");
+                controlPlaneMessageProcess();
+            }
+        } else {
+            sleep(60);
         }
+
         csp_iflist_print();
         csp_iflist_reset();
     }

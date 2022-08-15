@@ -1,0 +1,123 @@
+version:  "3"
+
+services:
+  broker1:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: /libcsp/build/examples/zmqproxy -v 1
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - 6000
+    networks:
+      - mqtt1
+  server1:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: /libcsp/build/examples/csp_server_client -a 1 -z broker1 
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    networks:
+      - mqtt1
+  client1:
+    image: csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: tail -f /dev/null
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    networks:
+      - mqtt1
+  bridge1:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: /libcsp/build/examples/csp_bridge -h mqtt1 -m 1 -r 1 -d -d -d -d
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - 9600:9600/udp
+    networks:
+      - mqtt1
+  broker2:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: /libcsp/build/examples/zmqproxy -v 1 -q
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - 6000
+    networks:
+      - mqtt2
+  server2:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: /libcsp/build/examples/csp_server_client -a 10 -z broker2 -q
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    networks:
+      - mqtt2
+  client2:
+    image: csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: tail -f /dev/null
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    networks:
+      - mqtt2
+  bridge2:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: /libcsp/build/examples/csp_bridge -h mqtt2 -m 1 -r 1 -d -d -d -d
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - 9700:9700/udp
+    networks:
+      - mqtt2
+  mosquitto:
+    image: eclipse-mosquitto
+    volumes:
+      - type: bind
+        source: ./mosquitto
+        target: /mosquitto
+    ports:
+      - 1883:1883
+      - 9001:9001
+    networks:
+      - mqtt2
+      - mqtt2
+networks:
+  mqtt1:
+  mqtt2:
+

@@ -320,7 +320,7 @@ int csp_zmqhub_init_w_name_endpoints_rxfilter(const uint16_t addr,
 	drv->context = zmq_ctx_new();
 	assert(drv->context != NULL);
 
-	csp_print("ZMQ INIT %s: pub(tx): [%s]\n\t sub(rx): [%s]\n\t rx filters: %u\n", drv->iface.name, publish_endpoint, subscribe_endpoint, rxfilter_count);
+	csp_print("ZMQ INIT %s: pub(tx): [%s]\n\t sub(rx): [%s]\n\t rx filters: %u\n\n", drv->iface.name, publish_endpoint, subscribe_endpoint, rxfilter_count);
 
 	/* Publisher (TX) */
 	drv->publisher = zmq_socket(drv->context, ZMQ_PUB);
@@ -411,7 +411,7 @@ int csp_zmqhub_init_filter2(const char * ifname, const char * host, uint16_t add
 	drv->context = zmq_ctx_new();
 	assert(drv->context != NULL);
 
-	csp_print("ZMQ INIT %s: pub(tx): [%s]\n\t sub(rx): [%s]\n", drv->iface.name, pub, sub);
+	csp_print("ZMQ INIT %s: pub(tx): [%s]\n\t sub(rx): [%s]\n\n", drv->iface.name, pub, sub);
 
 	/* Publisher (TX) */
 	drv->publisher = zmq_socket(drv->context, ZMQ_PUB);

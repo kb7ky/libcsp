@@ -43,6 +43,7 @@ def options(ctx):
 
     # Drivers and interfaces (requires external dependencies)
     gr.add_option('--enable-if-zmqhub', action='store_true', help='Enable ZMQ interface')
+    gr.add_option('--enable-if-mqtt', action='store_true', help='Enable MQTT interface')
     gr.add_option('--enable-can-socketcan', action='store_true', help='Enable Linux socketcan driver')
     gr.add_option('--enable-can-tcpcan', action='store_true', help='Enable Linux tcpcan driver')
     gr.add_option('--with-driver-usart', default=None, metavar='DRIVER', help='Build USART driver. [linux, None]')
@@ -165,6 +166,12 @@ def configure(ctx):
         ctx.check_cfg(package='libzmq', args='--cflags --libs', define_name='CSP_HAVE_LIBZMQ')
         ctx.env.append_unique('LIBS', ctx.env.LIB_LIBZMQ)
         ctx.env.append_unique('FILES_CSP', 'src/interfaces/csp_if_zmqhub.c')
+
+    # Add MQTT
+    if ctx.options.enable_if_mqtt:
+        ctx.check_cfg(package='libmosquitto', args='--cflags --libs', define_name='CSP_HAVE_LIBMQTT')
+        ctx.env.append_unique('LIBS', ctx.env.LIB_LIBMOSQUITTO)
+        ctx.env.append_unique('FILES_CSP', 'src/interfaces/csp_if_mqtt.c')
 
     # Add if TUN
     if ctx.options.enable_if_tun:
