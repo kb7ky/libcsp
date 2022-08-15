@@ -21,10 +21,13 @@ uint16_t topic16 = 0;
 
 FILE * logfile;
 
-static void * task_capture(void * ctx) {
+static void * task_capture(void * oldctx) {
 
     int ret;
 	uint8_t *rx_data;
+
+	void * ctx = zmq_ctx_new();
+	assert(ctx);
 
 	csp_print("Capture/logging task listening on %s\n", sub_str);
 
@@ -57,6 +60,8 @@ static void * task_capture(void * ctx) {
 			csp_print("ZMQ: %s\n", zmq_strerror(zmq_errno()));
 			continue;
 		}
+
+		// csp_print("ZMQ - got a packet\n");
 
 		int datalen = zmq_msg_size(&msg);
 		if (datalen < 5) {
@@ -149,8 +154,8 @@ int main(int argc, char ** argv) {
 					"Usage:\n"
 					" -d \t\tEnable debug\n"
 					" -v VERSION\tcsp version\n"
-					" -s SUB_STR\tsubscriber port: tcp://localhost:7000\n"
-					" -p PUB_STR\tpublisher  port: tcp://localhost:6000\n"
+					" -s SUB_STR\tsubscriber port: tcp://localhost:6000\n"
+					" -p PUB_STR\tpublisher  port: tcp://localhost:7000\n"
 					" -t TOPICLEN\tTopicLength in front of csp packet (1 or 2). Only valid with version 1\n"
 					" -q quiet mode - no logging\n"
 					" -f LOGFILE\tLog to this file\n");
@@ -166,7 +171,7 @@ int main(int argc, char ** argv) {
 	assert(frontend);
     ret = zmq_bind(frontend, sub_str);
 	assert(ret == 0);
-	csp_print("Subscriber task listening on %s\n", sub_str);
+	csp_print("XSub task listening on %s\n", sub_str);
 
 	void * backend = zmq_socket(ctx, ZMQ_XPUB);
 	assert(backend);
@@ -183,7 +188,7 @@ int main(int argc, char ** argv) {
 	assert(ret == 0);
 
 
-	csp_print("Publisher task listening on %s\n", pub_str);
+	csp_print("XPub task listening on %s\n", pub_str);
 
 	if(quietMode) {
 		csp_print("Quiet Mode enabled - no logs\n");
