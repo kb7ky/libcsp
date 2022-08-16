@@ -139,7 +139,7 @@ int csp_mqtt_init(  uint16_t addr,
 		strncpy(drv->publisherTopic, publisherTopic, sizeof(drv->publisherTopic) - 1);
 		strncpy(drv->subscriberTopic, subscriberTopic, sizeof(drv->subscriberTopic) - 1);
 	}
-	csp_print("IFMQTT INIT %s: broker %s:%u\n      pubTopic: %s - subTopic: %s\n\n", drv->iface.name, drv->host, drv->port, publisherTopic, subscriberTopic);
+	csp_print("IFMQTT INIT %s: broker %s:%u\n      pubTopic: %s - subTopic: %s\n\n", drv->iface.name, drv->host, drv->port, drv->publisherTopic, drv->subscriberTopic);
 
 	mosquitto_lib_init();
 
@@ -147,7 +147,8 @@ int csp_mqtt_init(  uint16_t addr,
 	snprintf(clientid, 23, "if_mqtt_%d", getpid());
 	drv->mosq = mosquitto_new(clientid, true, drv);
 	mosquitto_int_option(drv->mosq, MOSQ_OPT_PROTOCOL_VERSION, MQTT_PROTOCOL_V5);
-	
+	mosquitto_threaded_set(drv->mosq, true);
+		
 	if(drv->mosq) {
 		mosquitto_connect_callback_set(drv->mosq, on_connect);
 		mosquitto_message_callback_set(drv->mosq, on_message);
