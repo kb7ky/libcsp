@@ -42,6 +42,7 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 void on_connect(struct mosquitto *mosq, void *obj, int rc);
 void on_publish(struct mosquitto *mosq, void *obj, int mid);
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message);
+void on_disconnect(struct mosquitto *mosq, void *obj, int rc, const mosquitto_property *props);
 
 /**
  * Interface transmit function
@@ -156,6 +157,7 @@ int csp_mqtt_init(  uint16_t addr,
 		mosquitto_connect_callback_set(drv->mosq, on_connect);
 		mosquitto_message_callback_set(drv->mosq, on_message);
 		mosquitto_publish_callback_set(drv->mosq, on_publish);
+		mosquitto_disconnect_v5_callback_set(drv->mosq, on_disconnect);
 
 	    rc = mosquitto_connect(drv->mosq, drv->host, drv->port, 60);
 		if(rc != MOSQ_ERR_SUCCESS) {
@@ -267,6 +269,12 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 	}
 }
 
+void on_disconnect(struct mosquitto *mosq, void *obj, int rc, const mosquitto_property *props) {
+	mqtt_driver_t * drv = obj;
+	if (csp_dbg_packet_print >= 4)	{
+		csp_print("IFMQTT %s: on_disconnect - rc = %d\n", drv->iface.name, rc);
+	}
+}
 int csp_mqtt_setEncryption(int onoff) {
 	pthread_mutex_lock(&lock);
 
