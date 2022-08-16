@@ -191,8 +191,6 @@ int main(int argc, char * argv[]) {
             exit(7);
         }   
 
-        items[0].socket = cpd->subscriber;
-        items[0].events = ZMQ_POLLIN;
     }
 
     /* Wait for execution to end (ctrl+c) */
@@ -200,6 +198,9 @@ int main(int argc, char * argv[]) {
         if(controlPlaneActive) {
 		    zmq_msg_t msg;
 	        uint8_t *rx_data;
+
+            items[0].socket = cpd->subscriber;
+            items[0].events = ZMQ_POLLIN;
 
             rc = zmq_poll (items, 1, 60 * 1000); // 60 sec
             if(rc > 0) {
