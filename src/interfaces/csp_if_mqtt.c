@@ -18,13 +18,15 @@
 typedef struct {
 	struct mosquitto *mosq;
 	pthread_t rx_thread;
-	char host[CSP_IFLIST_NAME_MAX + 1];
+	char host[16 + 1];
 	uint16_t port;
-	char publisherTopic[CSP_IFLIST_NAME_MAX + 1];
-	char subscriberTopic[CSP_IFLIST_NAME_MAX + 1];
-	char name[CSP_IFLIST_NAME_MAX + 1];
-	char user[CSP_IFLIST_NAME_MAX + 1];
-	char password[CSP_IFLIST_NAME_MAX + 1];
+	char publisherTopic[128 + 1];
+	char subscriberTopic[128 + 1];
+	char name[256 + 1];
+	char user[256 + 1];
+	char password[256 + 1];
+	char aes256IV[256 + 1];
+	char aes256Key[256 + 1];
 	int encryptRX;
 	int encryptTX;
 	int flipTopics;
@@ -98,6 +100,8 @@ int csp_mqtt_init(  uint16_t addr,
                     int encryptRX,
                     int encryptTX,
                     int flipTopics,
+                    const char * aes256IV,
+                    const char * aes256Key,
                     csp_iface_t ** return_interface) {
 
 	int ret;
@@ -116,6 +120,8 @@ int csp_mqtt_init(  uint16_t addr,
 	strncpy(drv->host, host, sizeof(drv->host) - 1);
 	strncpy(drv->user, user, sizeof(drv->user) - 1);
 	strncpy(drv->password, password, sizeof(drv->password) - 1);
+	strncpy(drv->aes256IV, aes256IV, sizeof(drv->aes256IV) - 1);
+	strncpy(drv->aes256Key, aes256Key, sizeof(drv->aes256Key) - 1);
 	drv->port = port;
 	drv->encryptRX = encryptRX;
 	drv->encryptTX = encryptTX;

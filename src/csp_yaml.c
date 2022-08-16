@@ -239,8 +239,10 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 			flipTopics = (strcmp("true", data->flipTopics) == 0) ? 1 : 0;
 		}
 
+		csp_print("AddrBuffer: %s\n", &addrBuffer[0])
 		csp_mqtt_init(addr, data->name, &addrBuffer[0], atoi(data->remote_port), data->subscriberTopic,
-						data->publisherTopic, data->user, data->password, encryptRx, encryptTx, flipTopics, &iface);
+						data->publisherTopic, data->user, data->password, encryptRx, encryptTx, flipTopics,
+						data->aes256IV, data->aes256Key, &iface);
 	}
 #endif
 

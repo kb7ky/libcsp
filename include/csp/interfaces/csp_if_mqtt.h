@@ -43,6 +43,8 @@ L
    @param[in] encryptRx flag when true indicates encrypt received frames
    @param[in] encryptTX  flag when tru indicates encrypt transmitted packets
    @param[in] flipTopics reverse subscriberTopic and publisherTopic to enable back to back testing
+   @param[in] aes256IV Crypto IV
+   @param[in] aes256Key CryptoKey
    @param[out] return_interface created CSP interface.
    @return #CSP_ERR_NONE on succcess - else assert.
 */
@@ -57,6 +59,8 @@ int csp_mqtt_init(const uint16_t addr,
                      int encryptRX,
                      int encryptTX,
                      int flipTopics,
+                     const char * aes256IV,
+                     const char * aes256Key,
                      csp_iface_t ** return_interface);
 
 /**

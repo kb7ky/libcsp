@@ -49,8 +49,6 @@ services:
       options:
         max-file: "5"
         max-size: "10m"
-    ports:
-      - 9600:9600/udp
     networks:
       - mqtt1
   broker2:
@@ -101,8 +99,6 @@ services:
       options:
         max-file: "5"
         max-size: "10m"
-    ports:
-      - 9700:9700/udp
     networks:
       - mqtt2
   mosquitto:
@@ -115,7 +111,7 @@ services:
       - 1883:1883
       - 9001:9001
     networks:
-      - mqtt2
+      - mqtt1
       - mqtt2
 networks:
   mqtt1:
