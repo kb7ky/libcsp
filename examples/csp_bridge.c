@@ -198,10 +198,27 @@ int main(int argc, char * argv[]) {
     /* Wait for execution to end (ctrl+c) */
     while(1) {
         if(controlPlaneActive) {
+		    zmq_msg_t msg;
+	        uint8_t *rx_data;
+
+		    zmq_msg_init_size(&msg, 1024);
+
             rc = zmq_poll (items, 1, 60 * 1000); // 60 sec
             if(rc > 0) {
+                if (zmq_msg_recv(&msg, cpd->subscriber, 0) < 0) {
+                    zmq_msg_close(&msg);
+                    csp_print("ZMQ: control plane error %s\n", zmq_strerror(zmq_errno()));
+                    continue;
+                }
+		        int datalen = zmq_msg_size(&msg);
+			    rx_data = zmq_msg_data(&msg);
+			    rx_data[datalen] = '\0';
+			    csp_print(">%s<\n", rx_data);
+
                 csp_print("Processing ControlPlane Message\n");
                 controlPlaneMessageProcess();
+
+                zmq_msg_close(&msg);
             }
         } else {
             sleep(60);
