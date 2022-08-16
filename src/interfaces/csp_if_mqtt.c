@@ -148,7 +148,7 @@ int csp_mqtt_init(  uint16_t addr,
 	mosquitto_lib_init();
 
 	memset(clientid, 0, 24);
-	snprintf(clientid, 23, "if_mqtt_%d", getpid());
+	snprintf(clientid, 23, "if_mqtt_%d", drv->flipTopics);
 	drv->mosq = mosquitto_new(clientid, true, drv);
 	mosquitto_int_option(drv->mosq, MOSQ_OPT_PROTOCOL_VERSION, MQTT_PROTOCOL_V5);
 	mosquitto_threaded_set(drv->mosq, true);
