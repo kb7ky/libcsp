@@ -75,16 +75,18 @@ int csp_mqtt_tx(csp_iface_t * iface, uint16_t via, csp_packet_t * packet) {
 
 void * csp_mqtt_task(void * param) {
 	mqtt_driver_t * drv = param;
-	int rc = 0;
 
 	while (1) {
-		mosquitto_loop_forever();
+		mosquitto_loop_forever(drv->mosq, -1, 1);
+#if 0
+		int rc = 0;
 		rc = mosquitto_loop(drv->mosq, -1, 1);
 		if(rc){
 			csp_print("IFMQTT: loop failed - connection error! (%d)\n", rc);
 			sleep(10);
 			mosquitto_reconnect(drv->mosq);
 		}
+#endif
 	}
 
 	return NULL;
