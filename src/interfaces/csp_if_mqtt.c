@@ -78,6 +78,7 @@ void * csp_mqtt_task(void * param) {
 	int rc = 0;
 
 	while (1) {
+		mosquitto_loop_forever();
 		rc = mosquitto_loop(drv->mosq, -1, 1);
 		if(rc){
 			csp_print("IFMQTT: loop failed - connection error! (%d)\n", rc);
@@ -148,7 +149,7 @@ int csp_mqtt_init(  uint16_t addr,
 	drv->mosq = mosquitto_new(clientid, true, drv);
 	mosquitto_int_option(drv->mosq, MOSQ_OPT_PROTOCOL_VERSION, MQTT_PROTOCOL_V5);
 	mosquitto_threaded_set(drv->mosq, true);
-		
+
 	if(drv->mosq) {
 		mosquitto_connect_callback_set(drv->mosq, on_connect);
 		mosquitto_message_callback_set(drv->mosq, on_message);
@@ -159,9 +160,6 @@ int csp_mqtt_init(  uint16_t addr,
 		if(rc != MOSQ_ERR_SUCCESS) {
 			csp_print("MQTT Connect Error %s: broker %s:%u err: %d\n", drv->iface.name, drv->host, drv->port, rc);
 		}
-
-		mosquitto_subscribe(drv->mosq, NULL, drv->subscriberTopic, 0);
-
 	}
 
 	/* Start RX thread */
@@ -192,7 +190,9 @@ void on_connect(struct mosquitto *mosq, void *obj, int rc) {
 		if(rc != MOSQ_ERR_SUCCESS) {
 			csp_print("IFMQTT %s:on_connect - failed %d %s\n", drv->iface.name, rc, mosquitto_connack_string(rc));
 		} else {
-			csp_print("IFMQTT %s:on_connect - success\n", drv->iface.name);
+			csp_print("IFMQTT %s:on_connect - success - subscribing...\n", drv->iface.name);
+			mosquitto_subscribe(drv->mosq, NULL, drv->subscriberTopic, 0);
+
 		}
 	}
 
