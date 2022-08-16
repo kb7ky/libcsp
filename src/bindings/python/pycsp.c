@@ -5,6 +5,7 @@
 #include <csp/csp.h>
 #include <csp/csp_cmp.h>
 #include <csp/interfaces/csp_if_zmqhub.h>
+#include <csp/interfaces/csp_if_mqtt.h>
 #include <csp/interfaces/csp_if_kiss.h>
 #include <csp/drivers/usart.h>
 #include <csp/drivers/can_socketcan.h>
@@ -911,6 +912,45 @@ static PyObject * pycsp_zmqhub_init(PyObject * self, PyObject * args) {
 	Py_RETURN_NONE;
 }
 
+static PyObject * pycsp_mqtt_init(PyObject * self, PyObject * args) {
+	uint16_t addr;
+	char * ifname;
+	char * ipaddrstr;
+	uint16_t remote_port;
+	char * subscriberTopic;
+	char * publisherTopic;
+	char * user;
+	char * password;
+	int encryptRx;
+	int encryptTx;
+	int flipTopics;
+	char * aes256IV;
+	char * aes256Key;
+
+	if (!PyArg_ParseTuple(args, "hsshssssiiiss", 
+			&addr, &ifname, &ipaddrstr, &remote_port,
+			&subscriberTopic, &publisherTopic,
+			&user, &password,
+			&encryptRx, &encryptTx, &flipTopics,
+			&aes256IV, &aes256Key)) {
+		return NULL;  // TypeError is thrown
+	}
+
+	int res = csp_mqtt_init(addr, ifname, ipaddrstr, remote_port, 
+					subscriberTopic, publisherTopic,
+					user, password,
+					encryptRx, encryptTx, flipTopics,
+					aes256IV, aes256Key, NULL);
+
+
+	if (res != CSP_ERR_NONE) {
+		return PyErr_Error("csp_mqtt_init()", res);
+	}
+
+	Py_RETURN_NONE;
+}
+
+
 static PyObject * pycsp_can_socketcan_init(PyObject * self, PyObject * args) {
 	char * ifc;
 	int bitrate = 1000000;
@@ -944,6 +984,22 @@ static PyObject * pycsp_kiss_init(PyObject * self, PyObject * args) {
 
 	Py_RETURN_NONE;
 }
+
+static PyObject * pycsp_cp_encrypt(PyObject * self, PyObject * args) {
+	uint32_t txonoff = 0;
+	uint32_t rxonoff = 0;
+	char * if_name;
+	if (!PyArg_ParseTuple(args, "sII", &if_name, &txonoff, &rxonoff)) {
+		return NULL;  // TypeError is thrown
+	}
+	int res = csp_mqtt_setEncryption(if_name, txonoff, rxonoff);
+	if (res != CSP_ERR_NONE) {
+		return PyErr_Error("csp_mqtt_setEncryption()", res);
+	}
+
+	Py_RETURN_NONE;
+}
+
 
 static PyObject * pycsp_packet_set_data(PyObject * self, PyObject * args) {
 	PyObject * packet_capsule;
@@ -1068,9 +1124,13 @@ static PyMethodDef methods[] = {
 	{"cmp_clock_set", pycsp_cmp_clock_set, METH_VARARGS, ""},
 	{"cmp_clock_get", pycsp_cmp_clock_get, METH_VARARGS, ""},
 
-	/* csp/interfaces/csp_if_zmqhub.h */
+	/* csp/interfaces/csp_if_*.h */
 	{"zmqhub_init", pycsp_zmqhub_init, METH_VARARGS, ""},
+	{"mqtt_init", pycsp_mqtt_init, METH_VARARGS, ""},
 	{"kiss_init", pycsp_kiss_init, METH_VARARGS, ""},
+
+	/* control plane iterfaces */
+	{"cp_encrypt", pycsp_cp_encrypt, METH_VARARGS, ""},
 
 	/* csp/drivers/can_socketcan.h */
 	{"can_socketcan_init", pycsp_can_socketcan_init, METH_VARARGS, ""},

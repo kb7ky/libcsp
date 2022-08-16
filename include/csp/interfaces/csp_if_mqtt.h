@@ -41,7 +41,7 @@ L
    @param[in] user user for authentication
    @param[in] password password for authentication
    @param[in] encryptRx flag when true indicates encrypt received frames
-   @param[in] encryptTX  flag when tru indicates encrypt transmitted packets
+   @param[in] encryptTx  flag when tru indicates encrypt transmitted packets
    @param[in] flipTopics reverse subscriberTopic and publisherTopic to enable back to back testing
    @param[in] aes256IV Crypto IV
    @param[in] aes256Key CryptoKey
@@ -56,8 +56,8 @@ int csp_mqtt_init(const uint16_t addr,
                      const char * publisherTopic,
                      const char * user,
                      const char * password,
-                     int encryptRX,
-                     int encryptTX,
+                     int encryptRx,
+                     int encryptTx,
                      int flipTopics,
                      const char * aes256IV,
                      const char * aes256Key,
@@ -65,7 +65,10 @@ int csp_mqtt_init(const uint16_t addr,
 
 /**
    ControlPlane hook to turn on/off encryption. 
-   @param[in] onoff - zero = off, non zero = on
+   @param[in] if_name - name of the interface
+   @param[in] txonoff - zero = off, non zero = on
+   @param[in] rxonoff - zero = off, non zero = on
+   @return #CSP_ERR_NONE on succcess - else assert.
 */
-int csp_mqtt_setEncryption(int onoff);
+int csp_mqtt_setEncryption(char * if_name, int txonoff, int rxonoff);
 

@@ -85,8 +85,8 @@
   encryptRx: false
   encryptTx: false
   flipTopics: false
-  user: "xxx"
-  password: "yyy"
+  user: "bridge1"
+  password: "tac0Time"
   subscriberTopic: "/downlink"
   publisherTopic: "/uplink"
   aes256IV: "xxx"

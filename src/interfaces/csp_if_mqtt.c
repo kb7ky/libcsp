@@ -14,6 +14,9 @@
 
 #include <csp/csp_id.h>
 
+/* defines (local) */
+#define MQTT_CRYPTO_BUF_MAX 4096	// max size of crypto buffer - allows for massive expansion
+
 /* MQTT driver & interface */
 typedef struct {
 	struct mosquitto *mosq;
@@ -27,8 +30,8 @@ typedef struct {
 	char password[256 + 1];
 	char aes256IV[256 + 1];
 	char aes256Key[256 + 1];
-	int encryptRX;
-	int encryptTX;
+	int encryptRx;
+	int encryptTx;
 	int flipTopics;
 	int state;
 	int sentid;
@@ -43,6 +46,9 @@ void on_connect(struct mosquitto *mosq, void *obj, int rc);
 void on_publish(struct mosquitto *mosq, void *obj, int mid);
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message);
 void on_disconnect(struct mosquitto *mosq, void *obj, int rc, const mosquitto_property *props);
+int csp_mqtt_crypto_init(mqtt_driver_t *drv);
+int csp_mqtt_crypto_rx(mqtt_driver_t *drv, void *inbuf, int inbuflen, void *outbug, int outbuflen, int *outlen);
+int csp_mqtt_crypto_tx(mqtt_driver_t *drv, void *inbuf, int inbuflen, void *outbug, int outbuflen, int *outlen);
 
 /**
  * Interface transmit function
@@ -50,7 +56,7 @@ void on_disconnect(struct mosquitto *mosq, void *obj, int rc, const mosquitto_pr
  * @return 1 if packet was successfully transmitted, 0 on error
  */
 int csp_mqtt_tx(csp_iface_t * iface, uint16_t via, csp_packet_t * packet) {
-
+	int result = 0;
 	mqtt_driver_t * drv = iface->driver_data;
 
 	/* pack the header */
@@ -63,7 +69,14 @@ int csp_mqtt_tx(csp_iface_t * iface, uint16_t via, csp_packet_t * packet) {
 			packet->id.sport, packet->id.pri, packet->id.flags, packet->length);
 	}
 
-	int result = mosquitto_publish(drv->mosq, &drv->sentid, drv->publisherTopic, packet->frame_length, packet->frame_begin, 0, false);
+	if(drv->encryptTx) {
+		char outbuf[MQTT_CRYPTO_BUF_MAX];
+		int outbuflen = 0;
+		result = csp_mqtt_crypto_tx(drv, packet->frame_begin, packet->frame_length, outbuf, sizeof(outbuf), &outbuflen);
+		result = mosquitto_publish(drv->mosq, &drv->sentid, drv->publisherTopic, outbuflen, outbuf, 0, false);
+	} else {
+		result = mosquitto_publish(drv->mosq, &drv->sentid, drv->publisherTopic, packet->frame_length, packet->frame_begin, 0, false);
+	}
 
 	if (result != MOSQ_ERR_SUCCESS) {
 		csp_print("MQTT send error: %u %s\n", result, mosquitto_strerror(result));
@@ -101,8 +114,8 @@ int csp_mqtt_init(  uint16_t addr,
                     const char * publisherTopic,
                     const char * user,
                     const char * password,
-                    int encryptRX,
-                    int encryptTX,
+                    int encryptRx,
+                    int encryptTx,
                     int flipTopics,
                     const char * aes256IV,
                     const char * aes256Key,
@@ -127,8 +140,8 @@ int csp_mqtt_init(  uint16_t addr,
 	strncpy(drv->aes256IV, aes256IV, sizeof(drv->aes256IV) - 1);
 	strncpy(drv->aes256Key, aes256Key, sizeof(drv->aes256Key) - 1);
 	drv->port = port;
-	drv->encryptRX = encryptRX;
-	drv->encryptTX = encryptTX;
+	drv->encryptRx = encryptRx;
+	drv->encryptTx = encryptTx;
 	drv->flipTopics = flipTopics;
 	drv->iface.name = drv->name;
 	drv->iface.driver_data = drv;
@@ -145,8 +158,13 @@ int csp_mqtt_init(  uint16_t addr,
 	}
 	csp_print("IFMQTT INIT %s: broker %s:%u\n      pubTopic: %s - subTopic: %s\n\n", drv->iface.name, drv->host, drv->port, drv->publisherTopic, drv->subscriberTopic);
 
+	/* init crypto stuff */
+	csp_mqtt_crypto_init(drv);
+
+	/* init mosquitto (mqtt) stuff */
 	mosquitto_lib_init();
 
+	// clientId MUST be unique in the broker or the connections will keep connecting/disconnecting
 	memset(clientid, 0, 24);
 	snprintf(clientid, 23, "if_mqtt_%d", drv->flipTopics);
 	drv->mosq = mosquitto_new(clientid, true, drv);
@@ -158,6 +176,10 @@ int csp_mqtt_init(  uint16_t addr,
 		mosquitto_message_callback_set(drv->mosq, on_message);
 		mosquitto_publish_callback_set(drv->mosq, on_publish);
 		mosquitto_disconnect_v5_callback_set(drv->mosq, on_disconnect);
+
+		if(strlen(drv->user) != 0) {
+			mosquitto_username_pw_set(drv->mosq, drv->user, drv->password);
+		}
 
 	    rc = mosquitto_connect(drv->mosq, drv->host, drv->port, 60);
 		if(rc != MOSQ_ERR_SUCCESS) {
@@ -271,11 +293,46 @@ void on_disconnect(struct mosquitto *mosq, void *obj, int rc, const mosquitto_pr
 		csp_print("IFMQTT %s: on_disconnect - rc = %d\n", drv->iface.name, rc);
 	}
 }
-int csp_mqtt_setEncryption(int onoff) {
-	pthread_mutex_lock(&lock);
 
+/**
+	Control Plane interface to turn encryption on/off
+*/
+int csp_mqtt_setEncryption(char *if_name, int txonoff, int rxonoff) {
+	mqtt_driver_t *drv = NULL;
+
+	csp_iface_t * ifc = csp_iflist_get();
+	while (ifc) {
+        if (strncmp(ifc->name, if_name, CSP_IFLIST_NAME_MAX) == 0) {
+        	drv = ifc->driver_data;
+        }
+		ifc = ifc->next;
+	}
+
+	if(drv == NULL) {
+		csp_print("IFMQTT: setEncryption failed to fine IFNAME %s\n",if_name);
+		return CSP_ERR_INVAL;
+	}
+
+	// Lock since this could be on another thread (python)
+	pthread_mutex_lock(&lock);
+	drv->encryptTx = txonoff;
+	drv->encryptRx = rxonoff;
 	pthread_mutex_unlock(&lock);
 
+	return CSP_ERR_NONE;
+}
+
+int csp_mqtt_crypto_init(mqtt_driver_t *drv) {
+	return CSP_ERR_NONE;
+}
+
+int csp_mqtt_crypto_rx(mqtt_driver_t *drv, void *inbuf, int inbuflen, void *outbug, int outbuflen, int *outlen) {
+	*outlen = 0;
+	return CSP_ERR_NONE;
+}
+
+int csp_mqtt_crypto_tx(mqtt_driver_t *drv, void *inbuf, int inbuflen, void *outbug, int outbuflen, int *outlen) {
+	*outlen = 0;
 	return CSP_ERR_NONE;
 }
 

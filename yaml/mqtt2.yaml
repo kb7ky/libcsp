@@ -85,8 +85,8 @@
   encryptRx: false
   encryptTx: false
   flipTopics: true
-  user: "xxx"
-  password: "yyy"
+  user: "bridge2"
+  password: "burrit0"
   subscriberTopic: "/downlink"
   publisherTopic: "/uplink"
   aes256IV: "xxx"
