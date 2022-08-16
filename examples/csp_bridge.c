@@ -262,7 +262,11 @@ int controlPlaneInit(char * publish_endpoint, char * subscribe_endpoint) {
 	assert(cpd->subscriber != NULL);
 
 	// XXX Debug - subscribe to all packets - no filter
-	ret = zmq_setsockopt(cpd->subscriber, ZMQ_SUBSCRIBE, NULL, 0);
+    char order[] = "ORDER|BRIDGE1|MQTT";
+    char req[] = "REQ|BRIDGE1|MQTT";
+	ret = zmq_setsockopt(cpd->subscriber, ZMQ_SUBSCRIBE, order, strlen(order));
+	assert(ret == 0);
+    ret = zmq_setsockopt(cpd->subscriber, ZMQ_SUBSCRIBE, req, strlen(req));
 	assert(ret == 0);
 
 	/* setup HEARTBEAT on the connections */
