@@ -220,7 +220,7 @@ static void csp_yaml_end_if(struct data_s * data, unsigned int * dfl_addr) {
 
 		char addrBuffer[16]; // xxx.xxx.xxx.xxx\0
 		if((csp_yaml_getaddrinfo(data->server, addrBuffer, sizeof(addrBuffer))) != 0) {
-			csp_print("zmq: unable to resolve server name\n");
+			csp_print("mqtt: unable to resolve server name\n");
 			exit(1);
 		}
 

@@ -80,7 +80,7 @@ void * csp_mqtt_task(void * param) {
 	while (1) {
 		rc = mosquitto_loop(drv->mosq, -1, 1);
 		if(rc){
-			csp_print("IFMQTT: connection error! (%d)\n", rc);
+			csp_print("IFMQTT: loop failed - connection error! (%d)\n", rc);
 			sleep(10);
 			mosquitto_reconnect(drv->mosq);
 		}
