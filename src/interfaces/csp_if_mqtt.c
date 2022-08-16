@@ -189,16 +189,12 @@ int csp_mqtt_init(  uint16_t addr,
 
 void on_connect(struct mosquitto *mosq, void *obj, int rc) {
 	mqtt_driver_t * drv = obj;
-	if (csp_dbg_packet_print >= 4)	{
-		if(rc != MOSQ_ERR_SUCCESS) {
-			csp_print("IFMQTT %s:on_connect - failed %d %s\n", drv->iface.name, rc, mosquitto_connack_string(rc));
-		} else {
-			csp_print("IFMQTT %s:on_connect - success - subscribing...\n", drv->iface.name);
-			mosquitto_subscribe(drv->mosq, NULL, drv->subscriberTopic, 0);
-
-		}
+	if(rc != MOSQ_ERR_SUCCESS) {
+		csp_print("IFMQTT %s:on_connect - failed %d %s\n", drv->iface.name, rc, mosquitto_connack_string(rc));
+	} else {
+		csp_print("IFMQTT %s:on_connect - success - subscribing...\n", drv->iface.name);
+		mosquitto_subscribe(drv->mosq, NULL, drv->subscriberTopic, 0);
 	}
-
 }
 
 void on_publish(struct mosquitto *mosq, void *obj, int mid) {
