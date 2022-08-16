@@ -11,6 +11,7 @@
 #include <csp/csp_yaml.h>
 #include <csp/csp_iflist.h>
 #include <csp/interfaces/csp_if_lo.h>
+#include <csp/interfaces/csp_if_mqtt.h>
 
 // used to plug in config
 extern csp_conf_t csp_conf;
@@ -289,6 +290,7 @@ int controlPlaneInit(char * publish_endpoint, char * subscribe_endpoint) {
 void controlPlaneMessageProcess(uint8_t *inData) {
     char *token = NULL;
     int idx = 0;
+    int res = CSP_ERR_NONE;
 
     /* storage for recv'd message processing - on stack so must zero */
     char task[256];
@@ -334,4 +336,37 @@ void controlPlaneMessageProcess(uint8_t *inData) {
     }
     csp_print("CP Recv:\n  task: %s\n  targetGs: %s\n  targetRfLink: %s\n  id: %d\n  payload: %s\n\n",
                 task, targetGs, targetRfLink, id, payload);
+    
+    /* explode payload and process */
+    char cmd[256];
+    memset(cmd, 0, 256);
+    int encryptTx = 0;
+    int encryptRx = 0;
+
+    token = strtok(payload, " ");
+    idx = 0;
+    while(token) {
+        switch(idx) {
+            case 0:
+                strncpy(cmd, token, 255);
+                break;
+            case 1:
+                encryptTx = atoi(token);
+                break;
+            case 2:
+                 encryptRx = atoi(token);
+               break;
+            default:
+                break;
+        }
+        idx++;
+        token = strtok(NULL, " ");
+    }
+
+    if(strncmp(cmd, "ENCRYPT", 255) == 0) {
+        res = csp_mqtt_setEncryption(targetRfLink, encryptTx, encryptRx);
+        if(res != CSP_ERR_NONE) {
+            csp_print("CP Recv: setEncryption failed - err %d", res);
+        }
+    }
 }
