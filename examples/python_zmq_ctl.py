@@ -38,7 +38,7 @@ if __name__ == "__main__":
     update_nbr = 0
     flags = zmq.NOBLOCK
     for update_nbr in range (50):
-        pubSocket.send(b'ERROR1')
+        pubSocket.send(b'ORDER|BRIDGE|MQTT|001|ENCRYPT 1 1')
         try: 
             string = subSocket.recv(flags)
             flags = 0

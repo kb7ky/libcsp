@@ -48,7 +48,7 @@ zmq_pollitem_t items [1];
 int bridge_start(void);
 int makeEndpoints(char * buf, int buf_size, char *host, int port);
 int controlPlaneInit(char * publish_endpoint, char * subscribe_endpoint);
-void controlPlaneMessageProcess();
+void controlPlaneMessageProcess(uint8_t *inData);
 
 /* main - initialization of CSP and start of bridge tasks */
 int main(int argc, char * argv[]) {
@@ -201,10 +201,9 @@ int main(int argc, char * argv[]) {
 		    zmq_msg_t msg;
 	        uint8_t *rx_data;
 
-		    zmq_msg_init_size(&msg, 1024);
-
             rc = zmq_poll (items, 1, 60 * 1000); // 60 sec
             if(rc > 0) {
+		        zmq_msg_init_size(&msg, 1024);
                 if (zmq_msg_recv(&msg, cpd->subscriber, 0) < 0) {
                     zmq_msg_close(&msg);
                     csp_print("ZMQ: control plane error %s\n", zmq_strerror(zmq_errno()));
@@ -216,7 +215,7 @@ int main(int argc, char * argv[]) {
 			    csp_print(">%s<\n", rx_data);
 
                 csp_print("Processing ControlPlane Message\n");
-                controlPlaneMessageProcess();
+                controlPlaneMessageProcess(rx_data);
 
                 zmq_msg_close(&msg);
             }
@@ -282,6 +281,52 @@ int controlPlaneInit(char * publish_endpoint, char * subscribe_endpoint) {
     return CSP_ERR_NONE;
 }
 
-void controlPlaneMessageProcess() {
+void controlPlaneMessageProcess(uint8_t *inData) {
+    char *token = NULL;
+    int idx = 0;
 
+    /* storage for recv'd message processing - on stack so must zero */
+    char task[256];
+    memset(task, 0, 256);
+    char targetGs[256];
+    memset(targetGs, 0, 256);
+    char targetRfLink[256];
+    memset(targetRfLink, 0, 256);
+    int id = 0;
+    char payload[1024];
+    memset(payload, 0, 1024);
+
+    token = strtok((char *) inData, "|");
+
+    while(token) {
+        switch(idx) {
+            case 0:
+                // Task
+                strncpy(task, token, 255);
+                break;
+            case 1:
+                // TargetGS
+                strncpy(targetGs, token, 255);
+                break;
+            case 2:
+                // TargetRfLink
+                strncpy(targetRfLink, token, 255);
+                break;
+            case 3:
+                // ID
+                id = atoi(token);
+                break;
+            case 4:
+                // Payload
+                strncpy(payload, token, 1023);
+                break;
+            default:
+                csp_print("controlPlaneMessageProcess overflow idx %d\n",idx);
+                break;
+        }
+        idx++;
+        token = strtok(NULL,"|");
+    }
+    csp_print("CP Recv:\n  task: %s\n  targetGs: %s\n  targetRfLink: %s\n  id: %d\n  payload: %s\n\n",
+                task, targetGs, targetRfLink, id, payload);
 }
