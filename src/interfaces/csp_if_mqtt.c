@@ -311,6 +311,8 @@ int csp_mqtt_setEncryption(char *if_name, int txonoff, int rxonoff) {
 	if(drv == NULL) {
 		csp_print("IFMQTT: setEncryption failed to fine IFNAME %s\n",if_name);
 		return CSP_ERR_INVAL;
+	} else {
+		csp_print("IFMQTT:%s setEncryption Tx %d Rx %d\n",if_name, txonoff, rxonoff);
 	}
 
 	// Lock since this could be on another thread (python)
