@@ -117,6 +117,22 @@ services:
     networks:
       - mqtt1
       - mqtt2
+  cpbroker:
+    image:  csp-base-stdio:latest
+    stdin_open: true
+    tty:  true
+    command: /libcsp/build/examples/zmqproxy -v 1 -r
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"
+    ports:
+      - 5555:6000
+      - 5556:7000
+    networks:
+      - mqtt1
+      - mqtt2
 networks:
   mqtt1:
   mqtt2:
