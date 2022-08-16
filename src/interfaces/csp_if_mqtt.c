@@ -155,7 +155,6 @@ int csp_mqtt_init(  uint16_t addr,
 	if(drv->mosq) {
 		mosquitto_connect_callback_set(drv->mosq, on_connect);
 		mosquitto_message_callback_set(drv->mosq, on_message);
-		mosquitto_connect_callback_set(drv->mosq, on_connect);
 		mosquitto_publish_callback_set(drv->mosq, on_publish);
 
 	    rc = mosquitto_connect(drv->mosq, drv->host, drv->port, 60);
