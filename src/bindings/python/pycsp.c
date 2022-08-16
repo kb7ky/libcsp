@@ -985,7 +985,7 @@ static PyObject * pycsp_kiss_init(PyObject * self, PyObject * args) {
 	Py_RETURN_NONE;
 }
 
-static PyObject * pycsp_cp_encrypt(PyObject * self, PyObject * args) {
+static PyObject * pycsp_cp_setEncrypt(PyObject * self, PyObject * args) {
 	uint32_t txonoff = 0;
 	uint32_t rxonoff = 0;
 	char * if_name;
@@ -1000,6 +1000,20 @@ static PyObject * pycsp_cp_encrypt(PyObject * self, PyObject * args) {
 	Py_RETURN_NONE;
 }
 
+static PyObject * pycsp_cp_getEncrypt(PyObject * self, PyObject * args) {
+	int txonoff = 0;
+	int rxonoff = 0;
+	char * if_name;
+	if (!PyArg_ParseTuple(args, "s", &if_name)) {
+		return NULL;  // TypeError is thrown
+	}
+	int res = csp_mqtt_getEncryption(if_name, &txonoff, &rxonoff);
+	if (res != CSP_ERR_NONE) {
+		return PyErr_Error("csp_mqtt_setEncryption()", res);
+	}
+	return Py_BuildValue("ii", txonoff, rxonoff);
+
+}
 
 static PyObject * pycsp_packet_set_data(PyObject * self, PyObject * args) {
 	PyObject * packet_capsule;
@@ -1130,7 +1144,8 @@ static PyMethodDef methods[] = {
 	{"kiss_init", pycsp_kiss_init, METH_VARARGS, ""},
 
 	/* control plane iterfaces */
-	{"cp_encrypt", pycsp_cp_encrypt, METH_VARARGS, ""},
+	{"cp_setEncrypt", pycsp_cp_setEncrypt, METH_VARARGS, ""},
+	{"cp_getEncrypt", pycsp_cp_getEncrypt, METH_VARARGS, ""},
 
 	/* csp/drivers/can_socketcan.h */
 	{"can_socketcan_init", pycsp_can_socketcan_init, METH_VARARGS, ""},

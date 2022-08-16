@@ -64,11 +64,12 @@ int csp_mqtt_init(const uint16_t addr,
                      csp_iface_t ** return_interface);
 
 /**
-   ControlPlane hook to turn on/off encryption. 
+   ControlPlane hook to set/get on/off encryption. 
    @param[in] if_name - name of the interface
    @param[in] txonoff - zero = off, non zero = on
    @param[in] rxonoff - zero = off, non zero = on
    @return #CSP_ERR_NONE on succcess - else assert.
 */
 int csp_mqtt_setEncryption(char * if_name, int txonoff, int rxonoff);
+int csp_mqtt_getEncryption(char * if_name, int *txonoff, int *rxonoff);
 

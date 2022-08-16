@@ -324,6 +324,29 @@ int csp_mqtt_setEncryption(char *if_name, int txonoff, int rxonoff) {
 	return CSP_ERR_NONE;
 }
 
+int csp_mqtt_getEncryption(char *if_name, int *txonoff, int *rxonoff) {
+	mqtt_driver_t *drv = NULL;
+
+	csp_iface_t * ifc = csp_iflist_get();
+	while (ifc) {
+        if (strncmp(ifc->name, if_name, CSP_IFLIST_NAME_MAX) == 0) {
+        	drv = ifc->driver_data;
+        }
+		ifc = ifc->next;
+	}
+
+	if(drv == NULL) {
+		csp_print("IFMQTT: getEncryption failed to fine IFNAME %s\n",if_name);
+		return CSP_ERR_INVAL;
+	} else {
+		csp_print("IFMQTT:%s getEncryption Tx %d Rx %d\n",if_name, drv->encryptTx, drv->encryptRx);
+	}
+
+	*txonoff = drv->encryptTx;
+	*rxonoff = drv->encryptRx;
+
+	return CSP_ERR_NONE;}
+
 int csp_mqtt_crypto_init(mqtt_driver_t *drv) {
 	return CSP_ERR_NONE;
 }
