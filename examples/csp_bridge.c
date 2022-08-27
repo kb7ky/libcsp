@@ -287,6 +287,8 @@ int controlPlaneInit(char * publish_endpoint, char * subscribe_endpoint) {
     return CSP_ERR_NONE;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 void controlPlaneMessageProcess(uint8_t *inData) {
     char *token = NULL;
     int idx = 0;
@@ -370,3 +372,4 @@ void controlPlaneMessageProcess(uint8_t *inData) {
         }
     }
 }
+#pragma GCC diagnostic pop
