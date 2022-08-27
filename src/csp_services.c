@@ -18,13 +18,21 @@ int csp_ping(uint16_t node, uint32_t timeout, unsigned int size, uint8_t conn_op
 
 	/* Open connection */
 	csp_conn_t * conn = csp_connect(CSP_PRIO_NORM, node, CSP_PING, timeout, conn_options);
-	if (conn == NULL)
+	if (conn == NULL) {
+		if (csp_dbg_packet_print >= 3)	{
+			csp_print("csp_ping: Error - failed to get connection\n");
+		}
 		return -1;
+	}
 
 	/* Prepare data */
 	csp_packet_t * packet = csp_buffer_get(size);
-	if (packet == NULL)
+	if (packet == NULL) {
+		if (csp_dbg_packet_print >= 3)	{
+			csp_print("csp_ping: Error - failed to get buffer of size %d\n",size);
+		}
 		goto out;
+	}
 
 	/* Set data to increasing numbers */
 	packet->length = size;
@@ -36,12 +44,19 @@ int csp_ping(uint16_t node, uint32_t timeout, unsigned int size, uint8_t conn_op
 
 	/* Read incoming frame */
 	packet = csp_read(conn, timeout);
-	if (packet == NULL)
+	if (packet == NULL) {
+		if (csp_dbg_packet_print >= 3)	{
+			csp_print("csp_ping: Error - failed to read packet with timeout %d\n",timeout);
+		}
 		goto out;
+	}
 
 	/* Ensure that the data was actually echoed */
 	for (i = 0; i < size; i++) {
 		if (packet->data[i] != i % (0xff + 1)) {
+			if (csp_dbg_packet_print >= 3)	{
+				csp_print("csp_ping: Error - failed to validate data at idx %i\n",i);
+			}
 			goto out;
 		}
 	}
