@@ -289,12 +289,15 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 	}
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 void on_disconnect(struct mosquitto *mosq, void *obj, int rc, const mosquitto_property *props) {
 	mqtt_driver_t * drv = obj;
 	if (csp_dbg_packet_print >= 4)	{
 		csp_print("IFMQTT %s: on_disconnect - rc = %d\n", drv->iface.name, rc);
 	}
 }
+#pragma GCC diagnostic pop
 
 /**
 	Control Plane interface to turn encryption on/off
