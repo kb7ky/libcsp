@@ -287,8 +287,6 @@ int controlPlaneInit(char * publish_endpoint, char * subscribe_endpoint) {
     return CSP_ERR_NONE;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Werror=unused-but-set-variable"
 void controlPlaneMessageProcess(uint8_t *inData) {
     char *token = NULL;
     int idx = 0;
@@ -371,5 +369,7 @@ void controlPlaneMessageProcess(uint8_t *inData) {
             csp_print("CP Recv: setEncryption failed - err %d", res);
         }
     }
+
+    // HACK to use id in csp_print macro removed case
+    idx = id;
 }
-#pragma GCC diagnostic pop
