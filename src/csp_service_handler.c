@@ -213,6 +213,7 @@ static int csp_cmp_handler(csp_packet_t * packet) {
 }
 
 void csp_service_handler(csp_packet_t * packet) {
+	unsigned int i = 0;
 
 	switch (packet->id.dport) {
 
@@ -226,6 +227,15 @@ void csp_service_handler(csp_packet_t * packet) {
 
 		case CSP_PING:
 			/* A ping means, just echo the packet, so no changes */
+			/* Ensure that the data is correct */
+			for (i = 0; i < packet->length; i++) {
+				if (packet->data[i] != i % (0xff + 1)) {
+					if (csp_dbg_packet_print >= 3)	{
+						csp_print("csp_ping_response: Error - failed to validate data at idx %i\n",i);
+					}
+					goto out;
+				}
+			}
 			break;
 
 		case CSP_PS: {
