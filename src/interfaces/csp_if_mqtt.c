@@ -220,7 +220,7 @@ void on_connect(struct mosquitto *mosq, void *obj, int rc) {
 }
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wunused-variable"
 void on_publish(struct mosquitto *mosq, void *obj, int mid) {
 	mqtt_driver_t * drv = obj;
 	if (csp_dbg_packet_print >= 4)	{
