@@ -288,7 +288,7 @@ int controlPlaneInit(char * publish_endpoint, char * subscribe_endpoint) {
 }
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Werror=unused-but-set-variable"
 void controlPlaneMessageProcess(uint8_t *inData) {
     char *token = NULL;
     int idx = 0;
