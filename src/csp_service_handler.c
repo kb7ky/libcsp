@@ -233,7 +233,7 @@ void csp_service_handler(csp_packet_t * packet) {
 					if (csp_dbg_packet_print >= 3)	{
 						csp_print("csp_ping_response: Error - failed to validate data at idx %i\n",i);
 					}
-					goto out;
+					break;
 				}
 			}
 			break;
