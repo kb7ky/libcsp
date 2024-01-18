@@ -36,7 +36,7 @@ def options(ctx):
     gr.add_option('--with-max-connections', type=int, default=8, help='Set maximum number of connections')
     gr.add_option('--with-conn-queue-length', type=int, default=15, help='Set max connection queue length')
     gr.add_option('--with-router-queue-length', type=int, default=15, help='Set max router queue length')
-    gr.add_option('--with-buffer-size', type=int, default=256, help='Set size of csp buffers')
+    gr.add_option('--with-buffer-size', type=int, default=1024, help='Set size of csp buffers')
     gr.add_option('--with-buffer-count', type=int, default=15, help='Set number of csp buffers')
     gr.add_option('--with-rtable-size', type=int, default=10, help='Set max number of entries in route table')
     gr.add_option('--enable-yaml', action='store_true', help='Enable loading config via yaml file')
@@ -289,10 +289,25 @@ def build(ctx):
                         lib=ctx.env.LIBS,
                         use='csp')
 
+        ctx.program(source='examples/ksacker.c',
+                    target='examples/ksacker',
+                    lib=ctx.env.LIBS,
+                    use='csp')
+
         ctx.program(source='examples/kiss_crc.c',
                     target='examples/kiss_crc',
                     lib=ctx.env.LIBS,
                     use='csp')
+
+        ctx.program(source='examples/c_aggregator.c',
+                    target='examples/aggr',
+                    lib=ctx.env.LIBS,
+                    use='csp')
+
+        ctx.program(source='examples/zmqsink.c',
+                    target='examples/zmqsink',
+                    lib=ctx.env.LIBS,
+                    )
 
 def dist(ctx):
     ctx.excl = 'build/* **/.* **/*.pyc **/*.o **/*~ *.tar.gz'
